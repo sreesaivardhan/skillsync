@@ -2,44 +2,67 @@
 
 import User from '../models/User.js';
 
-export const initPresence = (io) => {
-  io.on('connection', async (socket) => {
-    const userId = socket.handshake.auth?.userId;
+// ── In-memory store: socketId → { userId, username, skillsOffered, skillsWanted, credits, status }
+export const onlineUsers = new Map();
 
-    // ── User comes online ─────────────────────────────────────────────────────
-    if (userId) {
+// ── Helper: convert Map to a plain array for emitting ─────────────────────────
+const getLobbyArray = () => Array.from(onlineUsers.values());
+
+export const initPresence = (io) => {
+  io.on('connection', (socket) => {
+
+    // ── user:register ───────────────────────────────────────────────────────────
+    // Payload: { userId, username, skillsOffered, skillsWanted, credits }
+    socket.on('user:register', async ({ userId, username, skillsOffered, skillsWanted, credits }) => {
       try {
+        // Add to in-memory Map
+        onlineUsers.set(socket.id, {
+          userId,
+          username,
+          skillsOffered,
+          skillsWanted,
+          credits,
+          status: 'available',
+        });
+
+        // Persist online state to MongoDB
         await User.findByIdAndUpdate(userId, {
           isOnline: true,
           socketId: socket.id,
         });
 
-        // Broadcast updated online-user list to everyone in lobby
-        const onlineUsers = await User.find({ isOnline: true }).select(
-          '-password'
-        );
-        io.emit('lobby:users', onlineUsers);
+        // Broadcast updated lobby to ALL clients
+        io.emit('lobby:update', getLobbyArray());
       } catch (err) {
-        console.error('Presence connect error:', err.message);
+        console.error('user:register error:', err.message);
       }
-    }
+    });
 
-    // ── User goes offline ─────────────────────────────────────────────────────
+    // ── disconnect ──────────────────────────────────────────────────────────────
     socket.on('disconnect', async () => {
-      if (!userId) return;
+      const user = onlineUsers.get(socket.id);
+      if (!user) return;
+
+      const { userId } = user;
+
+      // Remove from in-memory Map
+      onlineUsers.delete(socket.id);
+
       try {
+        // Persist offline state to MongoDB
         await User.findByIdAndUpdate(userId, {
           isOnline: false,
           socketId: null,
         });
-
-        const onlineUsers = await User.find({ isOnline: true }).select(
-          '-password'
-        );
-        io.emit('lobby:users', onlineUsers);
       } catch (err) {
-        console.error('Presence disconnect error:', err.message);
+        console.error('disconnect DB update error:', err.message);
       }
+
+      // Broadcast updated lobby
+      io.emit('lobby:update', getLobbyArray());
+
+      // Notify all clients this user went offline
+      io.emit('user:offline', { userId });
     });
   });
 };

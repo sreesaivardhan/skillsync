@@ -29,7 +29,7 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { username, email, password } = req.body;
+    const { username, email, password, skillsOffered, skillsWanted } = req.body;
 
     try {
       const existingUser = await User.findOne({ email });
@@ -43,6 +43,8 @@ router.post(
         username,
         email,
         password: hashedPassword,
+        skillsOffered: skillsOffered || [],
+        skillsWanted: skillsWanted || [],
       });
 
       const token = signToken(user._id);
@@ -54,6 +56,8 @@ router.post(
           username: user.username,
           email: user.email,
           credits: user.credits,
+          skillsOffered: user.skillsOffered,
+          skillsWanted: user.skillsWanted,
         },
       });
     } catch (error) {
@@ -98,6 +102,8 @@ router.post(
           username: user.username,
           email: user.email,
           credits: user.credits,
+          skillsOffered: user.skillsOffered,
+          skillsWanted: user.skillsWanted,
         },
       });
     } catch (error) {
