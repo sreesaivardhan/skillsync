@@ -35,6 +35,12 @@ export const initSession = (io) => {
         // Derive userA and userB from the roomId (format: userA_userB_timestamp)
         const [userAId, userBId] = roomId.split('_');
 
+        // Look up real usernames from the in-memory onlineUsers Map
+        const userAData = [...onlineUsers.values()].find(u => String(u.userId) === String(userAId));
+        const userBData = [...onlineUsers.values()].find(u => String(u.userId) === String(userBId));
+        const userAUsername = userAData?.username ?? 'User A';
+        const userBUsername = userBData?.username ?? 'User B';
+
         // Create the session document in MongoDB
         await Session.create({
           roomId,
@@ -46,7 +52,10 @@ export const initSession = (io) => {
 
         io.to(roomId).emit('room:ready', {
           roomId,
-          message: 'Both users connected. Session started!',
+          users: [
+            { userId: userAId, username: userAUsername },
+            { userId: userBId, username: userBUsername },
+          ],
         });
       } catch (err) {
         console.error('room:join error:', err.message);
@@ -103,13 +112,18 @@ export const initSession = (io) => {
         const session = await Session.findOneAndUpdate(
           { roomId, completedBy: { $ne: userId } },
           { $push: { completedBy: userId } },
-          { new: true }
+          { returnDocument: 'after' }
         );
 
         if (!session) return; // Already added or session not found
 
-        // Wait for both users to confirm
-        if (session.completedBy.length < 2) return;
+        // First user confirmed — notify the other user to also click Complete
+        if (session.completedBy.length < 2) {
+          socket.to(roomId).emit('session:partner_completed', {
+            message: 'Your partner marked the session complete. Click Complete to finish!',
+          });
+          return;
+        }
 
         // ── Both confirmed — finalise session ───────────────────────────────────
         await Session.findOneAndUpdate(
@@ -129,12 +143,12 @@ export const initSession = (io) => {
           User.findByIdAndUpdate(
             userAId,
             { $inc: { credits: 1, totalSessions: 1 } },
-            { new: true }
+            { returnDocument: 'after' }
           ),
           User.findByIdAndUpdate(
             userBId,
             { $inc: { credits: 1, totalSessions: 1 } },
-            { new: true }
+            { returnDocument: 'after' }
           ),
         ]);
 

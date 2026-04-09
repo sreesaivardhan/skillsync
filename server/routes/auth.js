@@ -39,7 +39,7 @@ router.post(
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const user = await User.create({
+      const newUser = await User.create({
         username,
         email,
         password: hashedPassword,
@@ -47,17 +47,17 @@ router.post(
         skillsWanted: skillsWanted || [],
       });
 
-      const token = signToken(user._id);
+      const token = signToken(newUser._id);
 
       return res.status(201).json({
         token,
         user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          credits: user.credits,
-          skillsOffered: user.skillsOffered,
-          skillsWanted: user.skillsWanted,
+          id: newUser._id,
+          username: newUser.username,
+          email: newUser.email,
+          credits: newUser.credits,
+          skillsOffered: newUser.skillsOffered,
+          skillsWanted: newUser.skillsWanted,
         },
       });
     } catch (error) {
@@ -83,27 +83,27 @@ router.post(
     const { email, password } = req.body;
 
     try {
-      const user = await User.findOne({ email });
-      if (!user) {
+      const newUser = await User.findOne({ email });
+      if (!newUser) {
         return res.status(400).json({ message: 'Invalid credentials' });
       }
 
-      const isMatch = await bcrypt.compare(password, user.password);
+      const isMatch = await bcrypt.compare(password, newUser.password);
       if (!isMatch) {
         return res.status(400).json({ message: 'Invalid credentials' });
       }
 
-      const token = signToken(user._id);
+      const token = signToken(newUser._id);
 
       return res.json({
         token,
         user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          credits: user.credits,
-          skillsOffered: user.skillsOffered,
-          skillsWanted: user.skillsWanted,
+          id: newUser._id,
+          username: newUser.username,
+          email: newUser.email,
+          credits: newUser.credits,
+          skillsOffered: newUser.skillsOffered,
+          skillsWanted: newUser.skillsWanted,
         },
       });
     } catch (error) {

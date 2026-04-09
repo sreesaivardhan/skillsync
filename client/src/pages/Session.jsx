@@ -17,9 +17,12 @@ const Session = () => {
   const [sessionStatus, setSessionStatus] = useState('waiting');
   const [partnerLeft, setPartnerLeft] = useState(false);
   const [completionPending, setCompletionPending] = useState(false);
+  const [partnerCompleted, setPartnerCompleted] = useState(false);
+  const [partnerName, setPartnerName] = useState('');
 
   const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const navigateTimeoutRef = useRef(null);
 
   // ── Sockets & Event Listeners ───────────────────────────────────────────────
   useEffect(() => {
@@ -27,7 +30,13 @@ const Session = () => {
 
     socket.emit('room:join', { roomId, userId: user.id });
 
-    const handleRoomReady = () => setSessionStatus('active');
+    const handleRoomReady = ({ users }) => {
+      setSessionStatus('active');
+      // Find the user who is NOT the current user — that's the partner
+      const myId = user._id || user.id;
+      const partner = users?.find(u => String(u.userId) !== String(myId));
+      if (partner) setPartnerName(partner.username);
+    };
 
     const handleChatBroadcast = (msg) => {
       // Map both `msg.message` and `msg.text` safely to `text`
@@ -36,24 +45,43 @@ const Session = () => {
 
     const handleNotesSync = ({ content }) => setSharedNotes(content);
 
-    const handleSessionConfirmed = () => setSessionStatus('completed');
-
     const handlePartnerLeft = () => setPartnerLeft(true);
+    const handlePartnerCompleted = () => setPartnerCompleted(true);
 
     socket.on('room:ready', handleRoomReady);
     socket.on('chat:broadcast', handleChatBroadcast);
     socket.on('notes:sync', handleNotesSync);
-    socket.on('session:confirmed', handleSessionConfirmed);
     socket.on('room:partner_left', handlePartnerLeft);
+    socket.on('session:partner_completed', handlePartnerCompleted);
 
     return () => {
       socket.off('room:ready', handleRoomReady);
       socket.off('chat:broadcast', handleChatBroadcast);
       socket.off('notes:sync', handleNotesSync);
-      socket.off('session:confirmed', handleSessionConfirmed);
       socket.off('room:partner_left', handlePartnerLeft);
+      socket.off('session:partner_completed', handlePartnerCompleted);
     };
   }, [roomId, user]);
+
+  // ── session:confirmed — isolated so navigate is never stale ─────────────────
+  useEffect(() => {
+    const handleSessionConfirmed = () => {
+      console.log('session:confirmed received — navigating in 3s');
+      setSessionStatus('completed');
+      setCompletionPending(false);
+      const timer = setTimeout(() => {
+        navigate('/lobby');
+      }, 3000);
+      navigateTimeoutRef.current = timer;
+    };
+
+    socket.on('session:confirmed', handleSessionConfirmed);
+
+    return () => {
+      socket.off('session:confirmed', handleSessionConfirmed);
+      if (navigateTimeoutRef.current) clearTimeout(navigateTimeoutRef.current);
+    };
+  }, [navigate]);
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -129,7 +157,7 @@ const Session = () => {
               {sessionStatus.toUpperCase()}
             </span>
             <span style={styles.partnerInfo}>
-              Partner: {roomId ? (roomId.split('_')[1] === user.id ? 'Host' : 'Guest') : '...'}
+              Partner: {partnerName || 'Connecting...'}
             </span>
           </div>
 
@@ -138,6 +166,20 @@ const Session = () => {
           )}
         </div>
       </div>
+
+      {/* Completion Pending Banner — shown to user who clicked Complete first */}
+      {completionPending && sessionStatus !== 'completed' && (
+        <div style={styles.pendingBanner}>
+          ⏳ You marked this complete — waiting for your partner to also click Complete...
+        </div>
+      )}
+
+      {/* Partner Completed Banner — shown to the second user, prompting them to click */}
+      {partnerCompleted && !completionPending && sessionStatus !== 'completed' && (
+        <div style={styles.partnerCompletedBanner}>
+          ✅ Your partner marked the session complete. Click <strong>Mark as Complete ✓</strong> to finish!
+        </div>
+      )}
 
       <div style={styles.mainContent}>
         {/* Left Panel: Chat (60%) */}
@@ -192,20 +234,17 @@ const Session = () => {
           />
 
           <div style={styles.completeBox}>
-            {completionPending ? (
-              <p style={styles.pendingText}>Waiting for partner to confirm...</p>
-            ) : (
-              <button
-                onClick={handleCompleteSession}
-                style={{
-                  ...styles.completeBtn,
-                  opacity: sessionStatus !== 'active' ? 0.5 : 1,
-                }}
-                disabled={sessionStatus !== 'active'}
-              >
-                Complete Session
-              </button>
-            )}
+            <button
+              onClick={handleCompleteSession}
+              style={{
+                ...styles.completeBtn,
+                opacity: (sessionStatus !== 'active' || completionPending) ? 0.45 : 1,
+                cursor: (sessionStatus !== 'active' || completionPending) ? 'not-allowed' : 'pointer',
+              }}
+              disabled={sessionStatus !== 'active' || completionPending}
+            >
+              {completionPending ? '✓ Marked Complete' : 'Mark as Complete ✓'}
+            </button>
           </div>
         </div>
       </div>
@@ -398,11 +437,28 @@ const styles = {
     cursor: 'pointer',
     transition: 'background-color 0.2s',
   },
-  pendingText: {
-    color: '#eab308',
+  pendingBanner: {
+    backgroundColor: '#854d0e',
+    borderBottom: '1px solid #a16207',
+    color: '#fef08a',
+    padding: '0.9rem 2rem',
+    fontSize: '1rem',
     fontWeight: 600,
-    margin: 0,
-    fontSize: '0.95rem',
+    textAlign: 'center',
+    letterSpacing: '0.01em',
+    flexShrink: 0,
+  },
+  partnerCompletedBanner: {
+    backgroundColor: '#14532d',
+    borderBottom: '1px solid #166534',
+    color: '#bbf7d0',
+    padding: '0.9rem 2rem',
+    fontSize: '1rem',
+    fontWeight: 600,
+    textAlign: 'center',
+    letterSpacing: '0.01em',
+    flexShrink: 0,
+    animation: 'pulse 1.5s ease-in-out infinite',
   },
   overlay: {
     position: 'fixed',
@@ -434,5 +490,21 @@ const styles = {
     cursor: 'pointer',
   },
 };
+
+// Inject keyframe animations for banners
+if (typeof document !== 'undefined') {
+  const existing = document.getElementById('session-keyframes');
+  if (!existing) {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'session-keyframes';
+    styleEl.innerHTML = `
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.65; }
+      }
+    `;
+    document.head.appendChild(styleEl);
+  }
+}
 
 export default Session;
