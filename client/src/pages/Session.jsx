@@ -23,6 +23,7 @@ const Session = () => {
   const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
   const navigateTimeoutRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // ── Sockets & Event Listeners ───────────────────────────────────────────────
   useEffect(() => {
@@ -39,8 +40,14 @@ const Session = () => {
     };
 
     const handleChatBroadcast = (msg) => {
-      // Map both `msg.message` and `msg.text` safely to `text`
-      setMessages((prev) => [...prev, { ...msg, text: msg.message }]);
+      // Preserve imageData / fileUrl alongside text
+      setMessages((prev) => [...prev, {
+        ...msg,
+        text: msg.message,
+        imageData: msg.imageData,
+        fileUrl: msg.fileUrl,
+        fileName: msg.fileName,
+      }]);
     };
 
     const handleNotesSync = ({ content }) => setSharedNotes(content);
@@ -131,6 +138,61 @@ const Session = () => {
     setCompletionPending(true);
   };
 
+  // ── File sharing ─────────────────────────────────────────────────────────────
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset so same file can be re-selected
+    e.target.value = '';
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File too large (max 5MB)');
+      return;
+    }
+
+    const base = { roomId, senderId: user.id, senderName: user.username, message: '' };
+
+    if (file.type.startsWith('image/')) {
+      // ── Image: read as Base64 and emit inline ──────────────────────────────
+      const reader = new FileReader();
+      reader.onload = () => {
+        const payload = { ...base, imageData: reader.result };
+        socket.emit('chat:message', payload);
+        // Optimistic update
+        setMessages((prev) => [...prev, { ...payload, text: '', timestamp: new Date().toISOString() }]);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // ── PDF / doc: upload to tmpfiles.org and share link ─────────────────
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('https://tmpfiles.org/api/v1/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const json = await response.json();
+        
+        if (json.status !== 'success' || !json.data?.url) {
+           throw new Error('Upload failed');
+        }
+        
+        // tmpfiles.org returns a view page URL by default.
+        // We inject /dl/ into it to create a direct download link.
+        const directUrl = json.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+
+        const payload = { ...base, fileUrl: directUrl, fileName: file.name };
+        socket.emit('chat:message', payload);
+        // Optimistic update
+        setMessages((prev) => [...prev, { ...payload, text: '', timestamp: new Date().toISOString() }]);
+      } catch (err) {
+        console.error(err);
+        alert('File upload failed. Please try again.');
+      }
+    }
+  };
+
   // Derive simple short room string for display
   const shortRoomId = roomId ? roomId.split('_')[2]?.slice(-6) || 'Sync' : '';
 
@@ -190,10 +252,39 @@ const Session = () => {
               return (
                 <div key={i} style={isSelf ? styles.msgSelfRow : styles.msgOtherRow}>
                   <div style={isSelf ? styles.msgSelf : styles.msgOther}>
-                    <p style={styles.msgName}>
-                      {isSelf ? 'You' : m.senderName}
-                    </p>
-                    <p style={styles.msgText}>{m.text}</p>
+                    <p style={styles.msgName}>{isSelf ? 'You' : m.senderName}</p>
+
+                    {/* Image message */}
+                    {m.imageData && (
+                      <a href={m.imageData} target="_blank" rel="noreferrer">
+                        <img
+                          src={m.imageData}
+                          alt="shared"
+                          style={styles.msgImage}
+                        />
+                      </a>
+                    )}
+
+                    {/* File / document message */}
+                    {m.fileUrl && (
+                      <div style={styles.fileCard}>
+                        <span style={styles.fileIcon}>📄</span>
+                        <div>
+                          <p style={styles.fileName}>{m.fileName}</p>
+                          <a
+                            href={m.fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={styles.fileLink}
+                          >
+                            Download
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Regular text message */}
+                    {m.text && <p style={styles.msgText}>{m.text}</p>}
                   </div>
                 </div>
               );
@@ -201,6 +292,23 @@ const Session = () => {
             <div ref={messagesEndRef} />
           </div>
           <div style={styles.chatInputContainer}>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,.doc,.docx"
+              style={{ display: 'none' }}
+              onChange={handleFileSelect}
+            />
+            {/* Attach button */}
+            <button
+              style={styles.attachBtn}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sessionStatus === 'completed'}
+              title="Attach file"
+            >
+              📎
+            </button>
             <textarea
               style={styles.chatInput}
               value={inputText}
@@ -392,6 +500,52 @@ const styles = {
     padding: '0 1.5rem',
     fontWeight: 600,
     cursor: 'pointer',
+  },
+  attachBtn: {
+    backgroundColor: '#1e1e1e',
+    border: '1px solid #333',
+    borderRadius: '8px',
+    padding: '0 0.8rem',
+    fontSize: '1.2rem',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    transition: 'border-color 0.2s',
+  },
+  msgImage: {
+    maxWidth: '200px',
+    borderRadius: '8px',
+    display: 'block',
+    cursor: 'pointer',
+    marginTop: '0.3rem',
+  },
+  fileCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.6rem',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: '8px',
+    padding: '0.5rem 0.75rem',
+    marginTop: '0.3rem',
+  },
+  fileIcon: {
+    fontSize: '1.4rem',
+    lineHeight: 1,
+  },
+  fileName: {
+    margin: 0,
+    fontSize: '0.85rem',
+    color: '#f0f0f0',
+    fontWeight: 500,
+    wordBreak: 'break-all',
+  },
+  fileLink: {
+    color: '#01696f',
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    textDecoration: 'none',
   },
   rightPanel: {
     flex: '40%',

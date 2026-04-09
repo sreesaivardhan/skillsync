@@ -63,17 +63,18 @@ export const initSession = (io) => {
     });
 
     // ── chat:message ────────────────────────────────────────────────────────────
-    // Payload: { roomId, message, senderId, senderName }
-    socket.on('chat:message', async ({ roomId, message, senderId, senderName }) => {
+    // Payload: { roomId, message, senderId, senderName, imageData?, fileUrl?, fileName? }
+    socket.on('chat:message', async (data) => {
+      const { roomId, message, senderId, senderName } = data;
       const timestamp = new Date();
 
       try {
-        // Persist message to MongoDB
+        // Persist message to MongoDB (text only — binary data not stored in DB)
         await Session.findOneAndUpdate(
           { roomId },
           {
             $push: {
-              messages: { senderId, text: message, timestamp },
+              messages: { senderId, text: message || '[attachment]', timestamp },
             },
           }
         );
@@ -81,11 +82,14 @@ export const initSession = (io) => {
         console.error('chat:message DB error:', err.message);
       }
 
-      // Broadcast to everyone in the room EXCEPT the sender
+      // Broadcast ALL fields to everyone in the room EXCEPT the sender
       socket.to(roomId).emit('chat:broadcast', {
-        message,
-        senderName,
-        senderId,
+        message:   data.message   || '',
+        senderName: data.senderName,
+        senderId:  data.senderId,
+        imageData: data.imageData || null,
+        fileUrl:   data.fileUrl   || null,
+        fileName:  data.fileName  || null,
         timestamp,
       });
     });
