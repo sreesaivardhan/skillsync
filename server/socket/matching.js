@@ -1,11 +1,7 @@
 // Socket.io handler for skill-based user matching logic in real time
 
 import { onlineUsers } from './presence.js';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // ── In-memory store: Set of socketIds currently searching for a match ─────────
 const searchingUsers = new Set();
@@ -79,27 +75,8 @@ export const initMatching = (io) => {
           onlineUsers.set(candidateSocketId, { ...candidate, status: 'in-session' });
 
           // ── AI Match Explanation ───────────────────────────────────────────
+          // AI temporarily disabled - quota issue
           let matchExplanation = null;
-          try {
-            const requesterSkills = (requester.skillsOffered || []).map(s => s.skill).join(', ') || 'various topics';
-            const candidateSkills = (candidate.skillsOffered || []).map(s => s.skill).join(', ') || 'various topics';
-            
-            const aiResponse = await openai.chat.completions.create({
-              model: 'gpt-3.5-turbo',
-              max_tokens: 60,
-              messages: [
-                { role: 'system', content: 'You are a skill-matching assistant.' },
-                { 
-                  role: 'user', 
-                  content: `In exactly 2 sentences explain why these two users are a great match. User A (${requester.username}) teaches: ${requesterSkills}. User B (${candidate.username}) teaches: ${candidateSkills}. Be specific and encouraging.` 
-                }
-              ]
-            });
-            matchExplanation = aiResponse.choices[0].message.content.trim();
-          } catch (err) {
-            console.error('OpenAI matching error:', err.message);
-            // proceed normally without breaking the match flow
-          }
 
           // ── Notify requester ───────────────────────────────────────────────
           socket.emit('match:found', {
@@ -152,17 +129,37 @@ export const initMatching = (io) => {
     });
 
     // ── match:declined ──────────────────────────────────────────────────────────
-    // Payload: { roomId, userId }
+    // Payload: { roomId, userId }  (userId = the one who clicked Decline)
     socket.on('match:declined', ({ roomId, userId }) => {
-      // Reset both users back to 'available'
+      console.log(`[match:declined] decliner=${userId}, roomId=${roomId}`);
+      let otherUserId = null;
+
+      // roomId format: "<userAId>_<userBId>_<timestamp>"
+      // Split to get the two participant IDs reliably
+      const [partA, partB] = roomId.split('_');
+
       for (const [socketId, user] of onlineUsers.entries()) {
-        if (user.status === 'in-session') {
-          // Check if this socket belongs to either user involved in this roomId
-          if (roomId.includes(user.userId)) {
-            onlineUsers.set(socketId, { ...user, status: 'available' });
-            // Re-add to searching pool so they can retry
-            searchingUsers.delete(socketId);
+        const uid = String(user.userId);
+        if (uid === String(partA) || uid === String(partB)) {
+          console.log(`[match:declined] resetting user ${uid} → available`);
+          onlineUsers.set(socketId, { ...user, status: 'available' });
+          searchingUsers.delete(socketId);
+          if (uid !== String(userId)) {
+            otherUserId = uid;
           }
+        }
+      }
+
+      console.log(`[match:declined] otherUserId to notify: ${otherUserId}`);
+
+      // Notify the accepted user so their UI can reset even if they navigated
+      if (otherUserId) {
+        const otherSocketId = findSocketIdByUserId(otherUserId);
+        console.log(`[match:declined] otherSocketId: ${otherSocketId}`);
+        if (otherSocketId) {
+          io.to(otherSocketId).emit('match:declined', {
+            message: 'Your match partner declined.',
+          });
         }
       }
 

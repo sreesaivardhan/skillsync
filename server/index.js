@@ -1,6 +1,6 @@
+import 'dotenv/config';
 // Entry point for the SkillSync Express + Socket.io server
 
-import 'dotenv/config';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';

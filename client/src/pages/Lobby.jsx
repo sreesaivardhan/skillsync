@@ -22,6 +22,7 @@ const Lobby = () => {
   const [showDebts, setShowDebts]   = useState(false);
   const [showRadar, setShowRadar]   = useState(false);
   const [debtCount, setDebtCount]   = useState(0);
+  const [declinedToast, setDeclinedToast] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -46,10 +47,19 @@ const Lobby = () => {
       setTimeoutMsg(null);
     };
 
+    const handleMatchDeclined = ({ message }) => {
+      // The OTHER user got declined — reset our match state and show toast
+      setMatchData(null);
+      setIsSearching(false);
+      setDeclinedToast(message || 'Your match declined. Looking for a new one...');
+      setTimeout(() => setDeclinedToast(null), 3000);
+    };
+
     socket.on('lobby:update', handleLobbyUpdate);
     socket.on('match:found', handleMatchFound);
     socket.on('match:timeout', handleMatchTimeout);
     socket.on('match:searching', handleMatchSearching);
+    socket.on('match:declined', handleMatchDeclined);
 
     // Keep badge count live when server emits after session completion
     const handleDebtUpdate = ({ debts }) => setDebtCount(debts?.length ?? 0);
@@ -60,6 +70,7 @@ const Lobby = () => {
       socket.off('match:found', handleMatchFound);
       socket.off('match:timeout', handleMatchTimeout);
       socket.off('match:searching', handleMatchSearching);
+      socket.off('match:declined', handleMatchDeclined);
       socket.off('debt:update', handleDebtUpdate);
     };
   }, [user]);
@@ -151,6 +162,13 @@ const Lobby = () => {
           onAccept={handleAcceptMatch}
           onDecline={handleDeclineMatch}
         />
+      )}
+
+      {/* Declined Toast */}
+      {declinedToast && (
+        <div style={styles.declinedToast}>
+          <span>⚠️ {declinedToast}</span>
+        </div>
       )}
 
       {/* ── Skill Debts collapsible section ────────────────────────────────── */}
@@ -323,6 +341,23 @@ const styles = {
     color: '#f87171',
     fontSize: '0.9rem',
     marginTop: '1.5rem',
+  },
+  declinedToast: {
+    position: 'fixed',
+    bottom: '2rem',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    backgroundColor: '#292524',
+    border: '1px solid #78350f',
+    color: '#fcd34d',
+    padding: '0.85rem 1.5rem',
+    borderRadius: '10px',
+    fontSize: '0.95rem',
+    fontWeight: 500,
+    zIndex: 9998,
+    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+    animation: 'fadein 0.3s ease-out',
+    whiteSpace: 'nowrap',
   },
   debtSection: {
     maxWidth: '1200px',

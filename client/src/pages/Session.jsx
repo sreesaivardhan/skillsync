@@ -21,8 +21,8 @@ const Session = () => {
   const [partnerCompleted, setPartnerCompleted] = useState(false);
   const [partnerName, setPartnerName] = useState('');
   
-  // Rating specific state
-  const [dbSessionId, setDbSessionId] = useState(null);
+  // Rating specific state — useRef so value survives re-render cycles
+  const dbSessionIdRef = useRef(null);
   const [partnerDetails, setPartnerDetails] = useState({ name: '', id: '' });
   const [showRatingModal, setShowRatingModal] = useState(false);
 
@@ -44,7 +44,11 @@ const Session = () => {
 
     const handleRoomReady = ({ users, sessionId }) => {
       setSessionStatus('active');
-      if (sessionId) setDbSessionId(sessionId);
+      // Persist in ref — immune to re-render cycles
+      if (sessionId) {
+        dbSessionIdRef.current = sessionId;
+        console.log('[Session] dbSessionIdRef set to:', sessionId);
+      }
 
       // Find the user who is NOT the current user — that's the partner
       const myId = user._id || user.id;
@@ -70,7 +74,10 @@ const Session = () => {
 
     const handlePartnerLeft = () => setPartnerLeft(true);
     const handlePartnerCompleted = () => setPartnerCompleted(true);
-    const handleAgenda = ({ agenda: newAgenda }) => setAgenda(newAgenda);
+    const handleAgenda = (data) => {
+      console.log('Agenda received:', data);
+      setAgenda(data.agenda);
+    };
 
     socket.on('room:ready', handleRoomReady);
     socket.on('chat:broadcast', handleChatBroadcast);
@@ -103,6 +110,22 @@ const Session = () => {
     return () => {
       socket.off('session:confirmed', handleSessionConfirmed);
       if (navigateTimeoutRef.current) clearTimeout(navigateTimeoutRef.current);
+    };
+  }, [navigate]);
+
+  // ── match:declined — fires if partner declines AFTER we already navigated ────
+  // Without this, the accepted user is permanently stuck on a 'waiting' session
+  useEffect(() => {
+    const handleMatchDeclined = ({ message }) => {
+      console.log('[Session] match:declined received — partner declined, redirecting');
+      // Navigate back to lobby immediately
+      navigate('/lobby');
+    };
+
+    socket.on('match:declined', handleMatchDeclined);
+
+    return () => {
+      socket.off('match:declined', handleMatchDeclined);
     };
   }, [navigate]);
 
@@ -245,21 +268,21 @@ const Session = () => {
         </div>
       </div>
 
-      {/* ── Rating Modal overrides everything if active ─────────────────────── */}
-      {showRatingModal && dbSessionId && partnerDetails.id && (
-        <RatingModal
-          sessionId={dbSessionId}
-          partnerName={partnerDetails.name}
-          partnerId={partnerDetails.id}
-          onClose={() => {
-            setShowRatingModal(false);
-            // 3-second auto-navigate happens AFTER user submits or skips rating
-            navigateTimeoutRef.current = setTimeout(() => {
-              navigate('/lobby');
-            }, 3000);
-          }}
-        />
-      )}
+      {/* ── Rating Modal ─────────────────────────────────────────────────── */}
+      {showRatingModal && partnerDetails.id && (() => {
+        console.log('[RatingModal] dbSessionIdRef.current at open:', dbSessionIdRef.current);
+        return (
+          <RatingModal
+            sessionId={dbSessionIdRef.current}
+            partnerName={partnerDetails.name}
+            partnerId={partnerDetails.id}
+            onClose={() => {
+              setShowRatingModal(false);
+              navigateTimeoutRef.current = setTimeout(() => navigate('/lobby'), 3000);
+            }}
+          />
+        );
+      })()}
 
       {/* Completion Pending Banner — shown to user who clicked Complete first */}
       {completionPending && sessionStatus !== 'completed' && (

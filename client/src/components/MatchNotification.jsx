@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const MatchNotification = ({ matchData, onAccept, onDecline }) => {
+  console.log('[UI] MatchNotification props:', JSON.stringify(matchData));
   const [timeLeft, setTimeLeft] = useState(30);
 
   useEffect(() => {

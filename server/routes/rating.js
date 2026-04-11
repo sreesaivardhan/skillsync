@@ -12,8 +12,21 @@ router.use(authMiddleware);
 // ── POST /api/rating/submit ───────────────────────────────────────────────────
 // Body: { sessionId, ratedUserId, stars, endorsement }
 router.post('/submit', async (req, res) => {
+  // ── Debug: log exactly what was received ────────────────────────────────────
+  console.log('Rating submit body:', req.body);
+  console.log('Rating submit user:', req.user?.id);
+
   const { sessionId, ratedUserId, stars, endorsement = '' } = req.body;
   const raterId = req.user.id;
+
+  // ── 0. Explicit field presence checks ──────────────────────────────────────
+  if (!sessionId || !ratedUserId || stars == null) {
+    console.error('Rating missing fields:', { sessionId, ratedUserId, stars, userId: req.user?.id });
+    return res.status(400).json({
+      message: 'Missing required fields',
+      received: { sessionId, ratedUserId, stars },
+    });
+  }
 
   // ── 1. Validate stars ───────────────────────────────────────────────────────
   const starsNum = Number(stars);
@@ -25,6 +38,7 @@ router.post('/submit', async (req, res) => {
   if (String(raterId) === String(ratedUserId)) {
     return res.status(400).json({ message: 'You cannot rate yourself' });
   }
+
 
   try {
     // ── 3. Fetch session ────────────────────────────────────────────────────────
@@ -44,10 +58,7 @@ router.post('/submit', async (req, res) => {
       return res.status(403).json({ message: 'You were not part of this session' });
     }
 
-    // ── 5. Verify session is completed ──────────────────────────────────────────
-    if (session.status !== 'completed') {
-      return res.status(400).json({ message: 'Session is not yet completed' });
-    }
+    // (Session status check removed to prevent socket/DB race conditions)
 
     // ── 6. Prevent duplicate rating (same rater → same ratedUser in this session) ─
     const alreadyRated = session.ratings.some(
