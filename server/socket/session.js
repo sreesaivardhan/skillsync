@@ -42,7 +42,7 @@ export const initSession = (io) => {
         const userBUsername = userBData?.username ?? 'User B';
 
         // Create the session document in MongoDB
-        await Session.create({
+        const sessionDoc = await Session.create({
           roomId,
           userA: userAId,
           userB: userBId,
@@ -52,6 +52,7 @@ export const initSession = (io) => {
 
         io.to(roomId).emit('room:ready', {
           roomId,
+          sessionId: sessionDoc._id,
           users: [
             { userId: userAId, username: userAUsername },
             { userId: userBId, username: userBUsername },

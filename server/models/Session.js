@@ -53,6 +53,15 @@ const SessionSchema = new mongoose.Schema(
     completedAt: {
       type: Date,
     },
+    // Tracks who has submitted a rating for this session (prevents duplicates)
+    ratings: [
+      {
+        rater:       { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        ratedUser:   { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        stars:       { type: Number, min: 1, max: 5 },
+        endorsement: { type: String, default: '' },
+      },
+    ],
   },
   { timestamps: true }
 );

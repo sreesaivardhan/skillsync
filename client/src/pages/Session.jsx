@@ -5,6 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import socket from '../socket';
 import { useUser } from '../context/UserContext';
 import Navbar from '../components/Navbar';
+import RatingModal from '../components/RatingModal';
 
 const Session = () => {
   const { roomId } = useParams();
@@ -19,6 +20,11 @@ const Session = () => {
   const [completionPending, setCompletionPending] = useState(false);
   const [partnerCompleted, setPartnerCompleted] = useState(false);
   const [partnerName, setPartnerName] = useState('');
+  
+  // Rating specific state
+  const [dbSessionId, setDbSessionId] = useState(null);
+  const [partnerDetails, setPartnerDetails] = useState({ name: '', id: '' });
+  const [showRatingModal, setShowRatingModal] = useState(false);
 
   const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -31,12 +37,17 @@ const Session = () => {
 
     socket.emit('room:join', { roomId, userId: user.id });
 
-    const handleRoomReady = ({ users }) => {
+    const handleRoomReady = ({ users, sessionId }) => {
       setSessionStatus('active');
+      if (sessionId) setDbSessionId(sessionId);
+
       // Find the user who is NOT the current user — that's the partner
       const myId = user._id || user.id;
       const partner = users?.find(u => String(u.userId) !== String(myId));
-      if (partner) setPartnerName(partner.username);
+      if (partner) {
+        setPartnerName(partner.username);
+        setPartnerDetails({ name: partner.username, id: partner.userId });
+      }
     };
 
     const handleChatBroadcast = (msg) => {
@@ -73,13 +84,10 @@ const Session = () => {
   // ── session:confirmed — isolated so navigate is never stale ─────────────────
   useEffect(() => {
     const handleSessionConfirmed = () => {
-      console.log('session:confirmed received — navigating in 3s');
+      console.log('session:confirmed received — showing rating modal');
       setSessionStatus('completed');
       setCompletionPending(false);
-      const timer = setTimeout(() => {
-        navigate('/lobby');
-      }, 3000);
-      navigateTimeoutRef.current = timer;
+      setShowRatingModal(true);
     };
 
     socket.on('session:confirmed', handleSessionConfirmed);
@@ -228,6 +236,22 @@ const Session = () => {
           )}
         </div>
       </div>
+
+      {/* ── Rating Modal overrides everything if active ─────────────────────── */}
+      {showRatingModal && dbSessionId && partnerDetails.id && (
+        <RatingModal
+          sessionId={dbSessionId}
+          partnerName={partnerDetails.name}
+          partnerId={partnerDetails.id}
+          onClose={() => {
+            setShowRatingModal(false);
+            // 3-second auto-navigate happens AFTER user submits or skips rating
+            navigateTimeoutRef.current = setTimeout(() => {
+              navigate('/lobby');
+            }, 3000);
+          }}
+        />
+      )}
 
       {/* Completion Pending Banner — shown to user who clicked Complete first */}
       {completionPending && sessionStatus !== 'completed' && (
