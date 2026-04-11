@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import socket from '../socket';
 
-const API = 'http://localhost:5000';
+const API = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
 const SkillDebtTracker = () => {
   const { token } = useUser();

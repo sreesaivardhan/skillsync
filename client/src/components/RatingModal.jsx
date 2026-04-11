@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useUser } from '../context/UserContext';
 
-const API = 'http://localhost:5000';
+const API = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
 const RatingModal = ({ sessionId, partnerName, partnerId, onClose }) => {
   const { token } = useUser();

@@ -79,7 +79,8 @@ const Lobby = () => {
   useEffect(() => {
     if (!user) return;
     const token = localStorage.getItem('ss_token');
-    fetch('http://localhost:5000/api/debts/my', {
+    const API = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+    fetch(`${API}/api/debts/my`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())

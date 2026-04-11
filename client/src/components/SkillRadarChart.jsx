@@ -13,7 +13,7 @@ import { useUser } from '../context/UserContext';
 
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
-const API = 'http://localhost:5000';
+const API = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
 const SkillRadarChart = () => {
   const { token } = useUser();
