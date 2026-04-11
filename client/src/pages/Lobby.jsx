@@ -8,6 +8,7 @@ import Navbar from '../components/Navbar';
 import UserCard from '../components/UserCard';
 import MatchNotification from '../components/MatchNotification';
 import SkillDebtTracker from '../components/SkillDebtTracker';
+import SkillRadarChart from '../components/SkillRadarChart';
 import SkillBadge from '../components/SkillBadge';
 
 const Lobby = () => {
@@ -19,6 +20,7 @@ const Lobby = () => {
   const [matchData, setMatchData] = useState(null);
   const [timeoutMsg, setTimeoutMsg] = useState(null);
   const [showDebts, setShowDebts]   = useState(false);
+  const [showRadar, setShowRadar]   = useState(false);
   const [debtCount, setDebtCount]   = useState(0);
 
   useEffect(() => {
@@ -173,6 +175,29 @@ const Lobby = () => {
         {showDebts && (
           <div style={styles.debtTrackerWrap}>
             <SkillDebtTracker />
+          </div>
+        )}
+      </div>
+
+      {/* ── Skill Radar collapsible section ────────────────────────────────── */}
+      <div style={styles.debtSection}>
+        <button
+          id="skill-radar-toggle"
+          style={{
+            ...styles.debtToggleBtn,
+            borderRadius: showRadar ? '12px 12px 0 0' : '12px',
+          }}
+          onClick={() => setShowRadar((v) => !v)}
+        >
+          <span>📡 Skill Radar</span>
+          <span style={{ marginLeft: 'auto', color: '#888', fontSize: '0.8rem' }}>
+            {showRadar ? '▲ Hide' : '▼ Show'}
+          </span>
+        </button>
+
+        {showRadar && (
+          <div style={styles.debtTrackerWrap}>
+            <SkillRadarChart />
           </div>
         )}
       </div>

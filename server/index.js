@@ -10,6 +10,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
 import debtRoutes from './routes/debt.js';
 import ratingRoutes from './routes/rating.js';
+import analyticsRoutes from './routes/analytics.js';
 import { initPresence } from './socket/presence.js';
 import { initMatching } from './socket/matching.js';
 import { initSession } from './socket/session.js';
@@ -29,9 +30,10 @@ app.use(
 app.use(express.json());
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.use('/api/auth',   authRoutes);
-app.use('/api/debts',  debtRoutes);
-app.use('/api/rating', ratingRoutes);
+app.use('/api/auth',      authRoutes);
+app.use('/api/debts',     debtRoutes);
+app.use('/api/rating',    ratingRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'SkillSync server running' });
