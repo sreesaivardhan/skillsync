@@ -156,15 +156,50 @@ export const initSession = (io) => {
           ),
         ]);
 
-        // ── Create SkillDebt if skillFocus is recorded ──────────────────────────
-        if (session.skillFocus) {
-          await SkillDebt.create({
-            debtor: userBId,
-            creditor: userAId,
-            skillTaught: session.skillFocus,
-            sessionId: session._id,
-          });
+        // ── Create bidirectional SkillDebt entries ───────────────────────────────
+        // Re-fetch session with populated user skill data
+        const populatedSession = await Session.findOne({ roomId })
+          .populate('userA', 'skillsOffered username')
+          .populate('userB', 'skillsOffered username');
+
+        if (populatedSession?.userA && populatedSession?.userB) {
+          const uA = populatedSession.userA;
+          const uB = populatedSession.userB;
+
+          // Safely extract the first offered skill name from each user
+          const skillTaughtByA = uA.skillsOffered?.[0]?.skill ?? 'Unknown Skill';
+          const skillTaughtByB = uB.skillsOffered?.[0]?.skill ?? 'Unknown Skill';
+
+          // Both users taught each other — create two debt records
+          await SkillDebt.insertMany([
+            {
+              debtor:      uA._id,   // A received skill from B
+              creditor:    uB._id,
+              skillTaught: skillTaughtByB,
+              sessionId:   populatedSession._id,
+              status:      'pending',
+            },
+            {
+              debtor:      uB._id,   // B received skill from A
+              creditor:    uA._id,
+              skillTaught: skillTaughtByA,
+              sessionId:   populatedSession._id,
+              status:      'pending',
+            },
+          ]);
+
+          // ── Emit debt:update to each user with their full pending debt list ────
+          const [debtsA, debtsB] = await Promise.all([
+            SkillDebt.find({ debtor: uA._id, status: 'pending' })
+              .populate('creditor', 'username'),
+            SkillDebt.find({ debtor: uB._id, status: 'pending' })
+              .populate('creditor', 'username'),
+          ]);
+
+          if (socketA) io.to(socketA).emit('debt:update', { debts: debtsA });
+          if (socketB) io.to(socketB).emit('debt:update', { debts: debtsB });
         }
+
 
         // ── Reset both users to 'available' in onlineUsers Map ──────────────────
         for (const [socketId, user] of onlineUsers.entries()) {

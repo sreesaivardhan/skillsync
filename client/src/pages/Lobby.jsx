@@ -7,8 +7,7 @@ import { useUser } from '../context/UserContext';
 import Navbar from '../components/Navbar';
 import UserCard from '../components/UserCard';
 import MatchNotification from '../components/MatchNotification';
-// Import SkillBadge purely to satisfy the requirement if it's meant to be top-level, 
-// though it's typically used inside UserCard/MatchNotification.
+import SkillDebtTracker from '../components/SkillDebtTracker';
 import SkillBadge from '../components/SkillBadge';
 
 const Lobby = () => {
@@ -19,6 +18,8 @@ const Lobby = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [matchData, setMatchData] = useState(null);
   const [timeoutMsg, setTimeoutMsg] = useState(null);
+  const [showDebts, setShowDebts]   = useState(false);
+  const [debtCount, setDebtCount]   = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -48,12 +49,29 @@ const Lobby = () => {
     socket.on('match:timeout', handleMatchTimeout);
     socket.on('match:searching', handleMatchSearching);
 
+    // Keep badge count live when server emits after session completion
+    const handleDebtUpdate = ({ debts }) => setDebtCount(debts?.length ?? 0);
+    socket.on('debt:update', handleDebtUpdate);
+
     return () => {
       socket.off('lobby:update', handleLobbyUpdate);
       socket.off('match:found', handleMatchFound);
       socket.off('match:timeout', handleMatchTimeout);
       socket.off('match:searching', handleMatchSearching);
+      socket.off('debt:update', handleDebtUpdate);
     };
+  }, [user]);
+
+  // Pre-fetch initial debt count for the badge on mount
+  useEffect(() => {
+    if (!user) return;
+    const token = localStorage.getItem('ss_token');
+    fetch('http://localhost:5000/api/debts/my', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((json) => setDebtCount(json.debts?.length ?? 0))
+      .catch(() => {});
   }, [user]);
 
   const handleFindMatch = () => {
@@ -126,12 +144,38 @@ const Lobby = () => {
 
       {/* Match Notification Modal */}
       {matchData && (
-        <MatchNotification 
-          matchData={matchData} 
-          onAccept={handleAcceptMatch} 
-          onDecline={handleDeclineMatch} 
+        <MatchNotification
+          matchData={matchData}
+          onAccept={handleAcceptMatch}
+          onDecline={handleDeclineMatch}
         />
       )}
+
+      {/* ── Skill Debts collapsible section ────────────────────────────────── */}
+      <div style={styles.debtSection}>
+        <button
+          id="skill-debts-toggle"
+          style={{
+            ...styles.debtToggleBtn,
+            borderRadius: showDebts ? '12px 12px 0 0' : '12px',
+          }}
+          onClick={() => setShowDebts((v) => !v)}
+        >
+          <span>📊 Skill Debts</span>
+          {debtCount > 0 && (
+            <span style={styles.debtBadge}>{debtCount}</span>
+          )}
+          <span style={{ marginLeft: 'auto', color: '#888', fontSize: '0.8rem' }}>
+            {showDebts ? '▲ Hide' : '▼ Show'}
+          </span>
+        </button>
+
+        {showDebts && (
+          <div style={styles.debtTrackerWrap}>
+            <SkillDebtTracker />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -254,7 +298,45 @@ const styles = {
     color: '#f87171',
     fontSize: '0.9rem',
     marginTop: '1.5rem',
-  }
+  },
+  debtSection: {
+    maxWidth: '1200px',
+    margin: '0 auto 2rem auto',
+    padding: '0 2rem',
+  },
+  debtToggleBtn: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    backgroundColor: '#1a1a1a',
+    border: '1px solid #2a2a2a',
+    borderRadius: '12px',
+    padding: '0.9rem 1.25rem',
+    color: '#f0f0f0',
+    fontSize: '1rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'border-color 0.2s, border-radius 0.15s',
+  },
+  debtBadge: {
+    backgroundColor: '#dc2626',
+    color: '#fff',
+    borderRadius: '999px',
+    padding: '0.1rem 0.55rem',
+    fontSize: '0.78rem',
+    fontWeight: 700,
+    lineHeight: 1.6,
+  },
+  debtTrackerWrap: {
+    backgroundColor: '#141414',
+    border: '1px solid #2a2a2a',
+    borderTop: 'none',
+    borderRadius: '0 0 12px 12px',
+    padding: '1.25rem',
+  },
+
 };
 
 // Add keyframes for spinner dynamically to avoid needing a separate CSS file
