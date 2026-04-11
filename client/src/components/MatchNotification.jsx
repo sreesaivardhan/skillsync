@@ -51,6 +51,14 @@ const MatchNotification = ({ matchData, onAccept, onDecline }) => {
           </div>
         </div>
 
+        {matchData.matchExplanation && (
+          <blockquote style={styles.explanationBlock}>
+            <p style={styles.explanationText}>
+              <strong>🤖 Why you matched:</strong> {matchData.matchExplanation}
+            </p>
+          </blockquote>
+        )}
+
         <p style={styles.timer}>
           Accept in: <strong>{timeLeft}s</strong>
         </p>
@@ -135,9 +143,25 @@ const styles = {
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
   },
   timer: {
-    margin: '2rem 0',
+    margin: '1.5rem 0',
     color: '#666',
     fontSize: '1rem',
+  },
+  explanationBlock: {
+    backgroundColor: 'rgba(1, 105, 111, 0.1)',
+    borderLeft: '3px solid #01696f',
+    padding: '1rem',
+    margin: '1.5rem 0 0 0',
+    borderRadius: '4px 8px 8px 4px',
+    textAlign: 'left',
+    animation: 'fadein 0.5s ease-in forwards',
+  },
+  explanationText: {
+    margin: 0,
+    fontSize: '0.85rem',
+    fontStyle: 'italic',
+    color: '#333',
+    lineHeight: 1.5,
   },
   actions: {
     display: 'flex',
@@ -170,5 +194,17 @@ const styles = {
     transition: 'transform 0.1s',
   },
 };
+
+// Injects the fadein animation keyframes globally
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.innerHTML = `
+    @keyframes fadein {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  `;
+  document.head.appendChild(styleSheet);
+}
 
 export default MatchNotification;

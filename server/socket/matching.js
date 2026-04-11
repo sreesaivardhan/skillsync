@@ -1,6 +1,11 @@
 // Socket.io handler for skill-based user matching logic in real time
 
 import { onlineUsers } from './presence.js';
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // ── In-memory store: Set of socketIds currently searching for a match ─────────
 const searchingUsers = new Set();
@@ -24,7 +29,7 @@ export const initMatching = (io) => {
 
     // ── match:request ───────────────────────────────────────────────────────────
     // Payload: { userId }
-    socket.on('match:request', ({ userId }) => {
+    socket.on('match:request', async ({ userId }) => {
       searchingUsers.add(socket.id);
       socket.emit('match:searching', { status: 'searching' });
 
@@ -73,9 +78,33 @@ export const initMatching = (io) => {
           onlineUsers.set(socket.id, { ...requester, status: 'in-session' });
           onlineUsers.set(candidateSocketId, { ...candidate, status: 'in-session' });
 
+          // ── AI Match Explanation ───────────────────────────────────────────
+          let matchExplanation = null;
+          try {
+            const requesterSkills = (requester.skillsOffered || []).map(s => s.skill).join(', ') || 'various topics';
+            const candidateSkills = (candidate.skillsOffered || []).map(s => s.skill).join(', ') || 'various topics';
+            
+            const aiResponse = await openai.chat.completions.create({
+              model: 'gpt-3.5-turbo',
+              max_tokens: 60,
+              messages: [
+                { role: 'system', content: 'You are a skill-matching assistant.' },
+                { 
+                  role: 'user', 
+                  content: `In exactly 2 sentences explain why these two users are a great match. User A (${requester.username}) teaches: ${requesterSkills}. User B (${candidate.username}) teaches: ${candidateSkills}. Be specific and encouraging.` 
+                }
+              ]
+            });
+            matchExplanation = aiResponse.choices[0].message.content.trim();
+          } catch (err) {
+            console.error('OpenAI matching error:', err.message);
+            // proceed normally without breaking the match flow
+          }
+
           // ── Notify requester ───────────────────────────────────────────────
           socket.emit('match:found', {
             roomId,
+            matchExplanation,
             matchedUser: {
               username: candidate.username,
               skillsOffered: candidate.skillsOffered,
@@ -86,6 +115,7 @@ export const initMatching = (io) => {
           // ── Notify candidate ───────────────────────────────────────────────
           io.to(candidateSocketId).emit('match:found', {
             roomId,
+            matchExplanation,
             matchedUser: {
               username: requester.username,
               skillsOffered: requester.skillsOffered,

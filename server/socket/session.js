@@ -4,6 +4,11 @@ import Session from '../models/Session.js';
 import User from '../models/User.js';
 import SkillDebt from '../models/SkillDebt.js';
 import { onlineUsers } from './presence.js';
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // ── Helper: find socketId for a given userId in onlineUsers Map ───────────────
 const findSocketIdByUserId = (userId) => {
@@ -58,6 +63,29 @@ export const initSession = (io) => {
             { userId: userBId, username: userBUsername },
           ],
         });
+
+        // ── AI Session Agenda Generation ────────────────────────────────────
+        try {
+          const userASkill = userAData?.skillsOffered?.[0]?.skill || 'general knowledge';
+          const userBSkill = userBData?.skillsOffered?.[0]?.skill || 'general knowledge';
+
+          const aiResponse = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            max_tokens: 120,
+            messages: [
+              {
+                role: 'user',
+                content: `Generate a focused 3-step session agenda for a 30-minute skill exchange. User A (${userAUsername}) is teaching: ${userASkill}. User B (${userBUsername}) is teaching: ${userBSkill}. Format as: Step 1: [title] — [one sentence]. Step 2: [title] — [one sentence]. Step 3: [title] — [one sentence]. Be concise and practical.`
+              }
+            ]
+          });
+          
+          const agendaText = aiResponse.choices[0].message.content.trim();
+          io.to(roomId).emit('session:agenda', { agenda: agendaText });
+        } catch (err) {
+          console.error('OpenAI agenda error:', err.message);
+          // Fail silently, don't emit anything
+        }
       } catch (err) {
         console.error('room:join error:', err.message);
       }

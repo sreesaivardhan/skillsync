@@ -26,6 +26,11 @@ const Session = () => {
   const [partnerDetails, setPartnerDetails] = useState({ name: '', id: '' });
   const [showRatingModal, setShowRatingModal] = useState(false);
 
+  // Agenda specific state
+  const [agenda, setAgenda] = useState(null);
+  const [agendaCollapsed, setAgendaCollapsed] = useState(false);
+  const [agendaDismissed, setAgendaDismissed] = useState(false);
+
   const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
   const navigateTimeoutRef = useRef(null);
@@ -65,12 +70,14 @@ const Session = () => {
 
     const handlePartnerLeft = () => setPartnerLeft(true);
     const handlePartnerCompleted = () => setPartnerCompleted(true);
+    const handleAgenda = ({ agenda: newAgenda }) => setAgenda(newAgenda);
 
     socket.on('room:ready', handleRoomReady);
     socket.on('chat:broadcast', handleChatBroadcast);
     socket.on('notes:sync', handleNotesSync);
     socket.on('room:partner_left', handlePartnerLeft);
     socket.on('session:partner_completed', handlePartnerCompleted);
+    socket.on('session:agenda', handleAgenda);
 
     return () => {
       socket.off('room:ready', handleRoomReady);
@@ -78,6 +85,7 @@ const Session = () => {
       socket.off('notes:sync', handleNotesSync);
       socket.off('room:partner_left', handlePartnerLeft);
       socket.off('session:partner_completed', handlePartnerCompleted);
+      socket.off('session:agenda', handleAgenda);
     };
   }, [roomId, user]);
 
@@ -353,6 +361,32 @@ const Session = () => {
 
         {/* Right Panel: Notes (40%) */}
         <div style={styles.rightPanel}>
+          {/* ── AI Agenda Card ── */}
+          {agenda && !agendaDismissed && (
+            <div style={styles.agendaCard}>
+              <div style={styles.agendaHeader}>
+                <span 
+                  style={styles.agendaTitle} 
+                  onClick={() => setAgendaCollapsed(c => !c)}
+                >
+                  🗓️ Session Agenda (AI Generated) <span style={styles.agendaToggle}>{agendaCollapsed ? '▶' : '▼'}</span>
+                </span>
+                <button 
+                  onClick={() => setAgendaDismissed(true)} 
+                  style={styles.closeAgendaBtn}
+                  title="Dismiss Agenda"
+                >
+                  ✕
+                </button>
+              </div>
+              {!agendaCollapsed && (
+                <div style={styles.agendaBody}>
+                  {agenda}
+                </div>
+              )}
+            </div>
+          )}
+
           <div style={styles.notesHeader}>
             <h3 style={styles.notesTitle}>Shared Notes</h3>
             <span style={styles.notesSub}>Syncs automatically</span>
@@ -605,15 +639,64 @@ const styles = {
   },
   completeBtn: {
     width: '100%',
-    backgroundColor: '#22c55e',
-    color: '#fff',
     padding: '1rem',
+    border: 'none',
     borderRadius: '8px',
+    backgroundColor: '#01696f',
+    color: '#fff',
     fontSize: '1rem',
     fontWeight: 600,
-    border: 'none',
-    cursor: 'pointer',
     transition: 'background-color 0.2s',
+  },
+  agendaCard: {
+    backgroundColor: 'rgba(1, 105, 111, 0.05)',
+    border: '1px solid #2a2a2a',
+    borderLeft: '4px solid #01696f',
+    borderRadius: '8px',
+    marginBottom: '1rem',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  agendaHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0.8rem 1rem',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderBottom: '1px solid #2a2a2a',
+  },
+  agendaTitle: {
+    margin: 0,
+    fontSize: '0.95rem',
+    fontWeight: 600,
+    color: '#2dd4bf',
+    cursor: 'pointer',
+    userSelect: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
+  agendaToggle: {
+    fontSize: '0.7rem',
+    color: '#888',
+  },
+  closeAgendaBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#888',
+    cursor: 'pointer',
+    fontSize: '1.2rem',
+    lineHeight: 1,
+    padding: '0 0.2rem',
+    transition: 'color 0.2s',
+  },
+  agendaBody: {
+    padding: '1rem',
+    color: '#e2e8f0',
+    fontSize: '0.9rem',
+    lineHeight: 1.6,
+    whiteSpace: 'pre-wrap',
   },
   pendingBanner: {
     backgroundColor: '#854d0e',
