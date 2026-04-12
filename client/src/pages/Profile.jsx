@@ -77,7 +77,7 @@ const ProfileTagInput = ({ label, tags, onAdd, onRemove, placeholder, withLevel 
 
 // ── Main Profile Component ────────────────────────────────────────────────────
 const Profile = () => {
-  const { user, token } = useUser();
+  const { user, token, updateUserLocally } = useUser();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -89,6 +89,8 @@ const Profile = () => {
   
   const [pwdForm, setPwdForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [showPwd, setShowPwd] = useState(false);
+  const [pwdError, setPwdError] = useState('');
+  const [pwdSuccess, setPwdSuccess] = useState('');
 
   useEffect(() => {
     if (!token) return;
@@ -128,8 +130,8 @@ const Profile = () => {
   const handleSaveProfile = async () => {
     setSavingProfile(true);
     try {
-      const res = await fetch(`${API}/api/auth/profile`, {
-        method: 'PUT',
+      const res = await fetch(`${API}/api/users/${user._id || user.id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           username: profileData.username,
@@ -140,6 +142,7 @@ const Profile = () => {
       if (res.ok) {
         const updated = await res.json();
         setProfileData(updated);
+        updateUserLocally(updated);
         setIsEditing(false);
         alert('Profile saved successfully!');
       } else {
@@ -155,13 +158,17 @@ const Profile = () => {
 
   const handleSavePassword = async (e) => {
     e.preventDefault();
+    setPwdError('');
+    setPwdSuccess('');
+
     if (pwdForm.newPassword !== pwdForm.confirmPassword) {
-      return alert("New passwords don't match.");
+      setPwdError("New passwords don't match.");
+      return;
     }
     setSavingPwd(true);
     try {
-      const res = await fetch(`${API}/api/auth/password`, {
-        method: 'PUT',
+      const res = await fetch(`${API}/api/users/${user._id || user.id}/password`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           currentPassword: pwdForm.currentPassword,
@@ -170,14 +177,14 @@ const Profile = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        alert('Password updated successfully!');
+        setPwdSuccess('Password updated successfully!');
         setPwdForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       } else {
-        alert(data.error || 'Failed to update password.');
+        setPwdError(data.message || data.error || 'Failed to update password.');
       }
     } catch (err) {
       console.error(err);
-      alert('Network error while updating password.');
+      setPwdError('Network error while updating password.');
     } finally {
       setSavingPwd(false);
     }
@@ -348,6 +355,8 @@ const Profile = () => {
                 minLength={6}
               />
             </div>
+            {pwdError && <p style={{ color: '#ef4444', fontSize: '13px', margin: '8px 0 0' }}>{pwdError}</p>}
+            {pwdSuccess && <p style={{ color: '#22c55e', fontSize: '13px', margin: '8px 0 0' }}>{pwdSuccess}</p>}
             
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <label style={{color: '#888', fontSize:'0.9rem'}}>

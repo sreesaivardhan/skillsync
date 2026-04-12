@@ -58,6 +58,15 @@ export const UserProvider = ({ children }) => {
     localStorage.removeItem('ss_token');
   };
 
+  // ── local sync ───────────────────────────────────────────────────────────────
+  const updateUserLocally = (updatedUserData) => {
+    setUser(prev => {
+      const merged = { ...prev, ...updatedUserData };
+      localStorage.setItem('ss_user', JSON.stringify(merged));
+      return merged;
+    });
+  };
+
   // ── Live credit updates from server ─────────────────────────────────────────
   useEffect(() => {
     const handleCreditUpdate = ({ userId, newBalance }) => {
@@ -111,7 +120,7 @@ export const UserProvider = ({ children }) => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <UserContext.Provider value={{ user, token, credits, login, logout }}>
+    <UserContext.Provider value={{ user, token, credits, login, logout, updateUserLocally }}>
       {children}
     </UserContext.Provider>
   );
