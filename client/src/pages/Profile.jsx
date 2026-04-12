@@ -36,7 +36,7 @@ const ProfileTagInput = ({ label, tags, onAdd, onRemove, placeholder, withLevel 
   return (
     <div style={styles.field}>
       <label style={styles.label}>{label}</label>
-      <div style={styles.tagBox} className="tags-container">
+      <div style={styles.tagBox} className="tags-container skill-tags-container">
         {tags.map((tag, idx) => {
           const isObj = typeof tag === 'object';
           const text = isObj ? `${tag.skill} (${tag.level})` : tag;
@@ -52,7 +52,7 @@ const ProfileTagInput = ({ label, tags, onAdd, onRemove, placeholder, withLevel 
             </span>
           );
         })}
-        <div style={styles.inputGroup}>
+        <div style={styles.inputGroup} className="skill-input-row">
           <input
             type="text"
             value={input}
@@ -201,7 +201,7 @@ const Profile = () => {
     <div style={styles.page} className="profile-page">
       <Navbar />
       
-      <div style={styles.mainContainer}>
+      <div style={styles.mainContainer} className="profile-container">
         <button onClick={() => navigate('/lobby')}
           style={{ display:'flex', alignItems:'center', gap:'6px', alignSelf: 'flex-start', background:'none',
             border:'1px solid #444', color:'#aaa', padding:'8px 14px',
@@ -210,9 +210,9 @@ const Profile = () => {
         </button>
 
         {/* Main Profile Info Card */}
-        <div style={styles.card} className="auth-card">
-          <div style={styles.headerRow}>
-            <div style={styles.avatarWrap}>
+        <div style={styles.card} className="auth-card profile-card">
+          <div style={styles.headerRow} className="profile-header-row">
+            <div style={styles.avatarWrap} className="profile-avatar-wrap">
               <div style={styles.avatar}>{profileData.username.charAt(0).toUpperCase()}</div>
               {isEditing ? (
                 <input

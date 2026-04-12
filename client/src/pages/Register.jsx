@@ -20,6 +20,15 @@ const TagInput = ({ label, tags, onAdd, onRemove, placeholder }) => {
     }
   };
 
+  const handleAddClick = (e) => {
+    e.preventDefault();
+    const val = input.trim();
+    if (val && !tags.includes(val)) {
+      onAdd(val);
+    }
+    setInput('');
+  };
+
   return (
     <div style={styles.field}>
       <label style={styles.label}>{label}</label>
@@ -34,14 +43,23 @@ const TagInput = ({ label, tags, onAdd, onRemove, placeholder }) => {
             {tag} <span style={styles.pillX}>×</span>
           </span>
         ))}
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          style={styles.tagInput}
-        />
+        <div className="skill-input-row" style={{ display: 'flex', gap: '8px', width: '100%' }}>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            style={{ ...styles.tagInput, flex: 1 }}
+          />
+          <button 
+            type="button" 
+            onClick={handleAddClick} 
+            style={{ padding: '8px 16px', backgroundColor: '#01696f', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, flexShrink: 0 }}
+          >
+            Add
+          </button>
+        </div>
       </div>
       <span style={styles.hint}>Press Enter to add a skill</span>
     </div>

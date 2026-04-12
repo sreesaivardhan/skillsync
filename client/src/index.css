@@ -196,4 +196,50 @@ body {
   .match-btn-group button {
     width: 100% !important;
   }
+
+  /* Profile page overflow fixes */
+  .profile-container, .profile-card, .profile-form {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Skills wraparound */
+  .skill-tags-container, .skills-offered-tags, .skills-wanted-tags {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  /* Profile Header Edit Wrapping */
+  .profile-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+  .profile-avatar-wrap {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+  .profile-avatar-wrap input {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ── Ultra-Small Mobile Devices ── */
+@media (max-width: 480px) {
+  .skill-input-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .skill-input-row input,
+  .skill-input-row select,
+  .skill-input-row button {
+    width: 100% !important;
+  }
 }
