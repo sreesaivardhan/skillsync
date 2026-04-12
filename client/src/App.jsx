@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Lobby from './pages/Lobby';
 import Session from './pages/Session';
+import Profile from './pages/Profile';
 
 // ── Protected Route ───────────────────────────────────────────────────────────
 // Redirects unauthenticated users to /login
@@ -38,6 +39,14 @@ const AppRoutes = () => (
       element={
         <ProtectedRoute>
           <Lobby />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/profile"
+      element={
+        <ProtectedRoute>
+          <Profile />
         </ProtectedRoute>
       }
     />

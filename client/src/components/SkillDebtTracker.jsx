@@ -73,9 +73,9 @@ const SkillDebtTracker = () => {
   }
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} className="skill-debt-columns">
       {/* ── You Owe ──────────────────────────────────────────────────────────── */}
-      <div style={styles.panel}>
+      <div style={styles.panel} className="skill-debt-column">
         <div style={styles.panelHeader}>
           <h3 style={styles.panelTitle}>
             <span style={styles.amberDot} />
@@ -91,7 +91,7 @@ const SkillDebtTracker = () => {
         ) : (
           <ul style={styles.list}>
             {myDebts.map((debt) => (
-              <li key={debt._id} style={styles.debtCard}>
+              <li key={debt._id} style={styles.debtCard} className="debt-card">
                 <div style={styles.debtInfo}>
                   <span style={styles.debtText}>
                     You owe{' '}
@@ -126,7 +126,7 @@ const SkillDebtTracker = () => {
       </div>
 
       {/* ── Owed to You ──────────────────────────────────────────────────────── */}
-      <div style={styles.panel}>
+      <div style={styles.panel} className="skill-debt-column">
         <div style={styles.panelHeader}>
           <h3 style={styles.panelTitle}>
             <span style={styles.tealDot} />
@@ -139,7 +139,7 @@ const SkillDebtTracker = () => {
         ) : (
           <ul style={styles.list}>
             {owedToMe.map((debt) => (
-              <li key={debt._id} style={{ ...styles.debtCard, ...styles.debtCardTeal }}>
+              <li key={debt._id} style={{ ...styles.debtCard, ...styles.debtCardTeal }} className="debt-card">
                 <div style={styles.debtInfo}>
                   <span style={styles.debtText}>
                     <strong style={styles.username}>

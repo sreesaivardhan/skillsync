@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 
 import User from '../models/User.js';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -112,5 +113,49 @@ router.post(
     }
   }
 );
+
+// ── GET /api/auth/me ──────────────────────────────────────────────────────────
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error fetching profile' });
+  }
+});
+
+// ── PUT /api/auth/profile ──────────────────────────────────────────────────────
+router.put('/profile', authMiddleware, async (req, res) => {
+  try {
+    const { username, skillsOffered, skillsWanted } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { username, skillsOffered, skillsWanted },
+      { new: true }
+    ).select('-password');
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error updating profile' });
+  }
+});
+
+// ── PUT /api/auth/password ────────────────────────────────────────────────────
+router.put('/password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id);
+    
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) return res.status(400).json({ error: 'Current password is incorrect' });
+    
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error updating password' });
+  }
+});
 
 export default router;

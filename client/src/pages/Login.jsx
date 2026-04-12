@@ -1,6 +1,7 @@
 // Page component for user login — handles form input and auth request
 
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 
@@ -11,6 +12,7 @@ const Login = () => {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -22,6 +24,9 @@ const Login = () => {
 
     try {
       const API = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+      
+      console.log('Login payload:', { email: form.email, password: form.password });
+
       const response = await fetch(`${API}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -44,7 +49,7 @@ const Login = () => {
 
   return (
     <div style={styles.page}>
-      <div style={styles.card}>
+      <div style={styles.card} className="auth-card">
         {/* Logo / Title */}
         <div style={styles.logoWrap}>
           <span style={styles.logoIcon}>⚡</span>
@@ -70,17 +75,25 @@ const Login = () => {
 
           <div style={styles.field}>
             <label style={styles.label} htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={form.password}
-              onChange={handleChange}
-              style={styles.input}
-              placeholder="••••••••"
-            />
+            <div style={{ position: 'relative', width: '100%' }}>
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                required
+                value={form.password}
+                onChange={handleChange}
+                style={{ ...styles.input, paddingRight: '48px', width: '100%', boxSizing: 'border-box' }}
+                placeholder="••••••••"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)}
+                style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)',
+                  background:'none', border:'none', color:'#666', cursor:'pointer',
+                  display:'flex', alignItems:'center', padding:'0' }}>
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {error && <p style={styles.error}>{error}</p>}

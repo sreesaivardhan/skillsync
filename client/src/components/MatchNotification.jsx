@@ -24,7 +24,7 @@ const MatchNotification = ({ matchData, onAccept, onDecline }) => {
 
   return (
     <div style={styles.overlay}>
-      <div style={styles.card}>
+      <div style={styles.card} className="match-modal-container">
         <h2 style={styles.heading}>⚡ Match Found!</h2>
 
         <p style={styles.username}>{username}</p>
@@ -63,8 +63,7 @@ const MatchNotification = ({ matchData, onAccept, onDecline }) => {
         <p style={styles.timer}>
           Accept in: <strong>{timeLeft}s</strong>
         </p>
-
-        <div style={styles.actions}>
+        <div style={styles.actions} className="match-btn-group">
           <button onClick={onDecline} style={styles.declineBtn} title="Decline match">
             Decline
           </button>

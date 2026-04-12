@@ -1,6 +1,7 @@
 // Page component for the real-time lobby where users browse and match with others
 
 import { useState, useEffect } from 'react';
+import { BarChart2, Radar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import socket from '../socket';
 import { useUser } from '../context/UserContext';
@@ -111,7 +112,7 @@ const Lobby = () => {
     <div style={styles.page}>
       <Navbar />
 
-      <div style={styles.mainContainer}>
+      <div style={styles.mainContainer} className="lobby-main-container">
         {/* Left Panel */}
         <div style={styles.leftPanel}>
           <div style={styles.panelHeader}>
@@ -130,7 +131,7 @@ const Lobby = () => {
         </div>
 
         {/* Right Panel */}
-        <div style={styles.rightPanel}>
+        <div style={styles.rightPanel} className="lobby-right-panel">
           <div style={styles.matchCard}>
             <h2 style={styles.matchHeading}>Ready to learn?</h2>
             <p style={styles.matchSub}>We will pair you with someone whose skills match your interests.</p>
@@ -182,7 +183,10 @@ const Lobby = () => {
           }}
           onClick={() => setShowDebts((v) => !v)}
         >
-          <span>📊 Skill Debts</span>
+          <span>
+            <BarChart2 size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Skill Debts
+          </span>
           {debtCount > 0 && (
             <span style={styles.debtBadge}>{debtCount}</span>
           )}
@@ -201,6 +205,7 @@ const Lobby = () => {
       {/* ── Skill Radar collapsible section ────────────────────────────────── */}
       <div style={styles.debtSection}>
         <button
+          className="lobby-toggle-btn"
           id="skill-radar-toggle"
           style={{
             ...styles.debtToggleBtn,
@@ -208,14 +213,17 @@ const Lobby = () => {
           }}
           onClick={() => setShowRadar((v) => !v)}
         >
-          <span>📡 Skill Radar</span>
+          <span>
+            <Radar size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Skill Radar
+          </span>
           <span style={{ marginLeft: 'auto', color: '#888', fontSize: '0.8rem' }}>
             {showRadar ? '▲ Hide' : '▼ Show'}
           </span>
         </button>
 
         {showRadar && (
-          <div style={styles.debtTrackerWrap}>
+          <div style={styles.debtTrackerWrap} className="radar-container">
             <SkillRadarChart />
           </div>
         )}

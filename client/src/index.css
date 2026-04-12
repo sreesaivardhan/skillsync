@@ -14,3 +14,186 @@ body {
 * {
   box-sizing: border-box;
 }
+
+.navbar-stats {
+  gap: 20px !important;
+}
+
+.logout-btn:hover {
+  background-color: #dc2626 !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
+}
+
+.logout-btn:active {
+  background-color: #b91c1c !important;
+  border-color: #b91c1c !important;
+}
+
+/* ── Mobile Responsiveness Overrides ── */
+@media (max-width: 768px) {
+
+  /* General Typography & Touch */
+  button,
+  input,
+  select,
+  textarea {
+    min-height: 44px !important;
+    font-size: 14px !important;
+  }
+
+  body,
+  #root {
+    overflow-x: hidden !important;
+    width: 100vw !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Navbar */
+  .mobile-only {
+    display: flex !important;
+  }
+
+  .navbar-container {
+    flex-wrap: wrap !important;
+    padding: 10px !important;
+  }
+
+  .navbar-stats {
+    display: none !important;
+    flex: 1 1 100% !important;
+    justify-content: center !important;
+    margin-top: 10px !important;
+    gap: 20px !important;
+  }
+
+  .navbar-stats.menu-open {
+    display: flex !important;
+  }
+
+  .navbar-links {
+    display: none !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+    margin-top: 15px !important;
+  }
+
+  .navbar-links.menu-open {
+    display: flex !important;
+  }
+
+  /* Lobby */
+  .skill-debt-columns {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .skill-debt-column {
+    width: 100% !important;
+    min-width: unset !important;
+    max-width: unset !important;
+  }
+
+  .skill-debt-column .debt-card {
+    font-size: 14px !important;
+  }
+
+  .lobby-main-container {
+    flex-direction: column !important;
+    height: auto !important;
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
+
+  .lobby-right-panel {
+    border-left: none !important;
+    padding-left: 0 !important;
+    border-top: 1px solid #333 !important;
+    padding-top: 1rem !important;
+  }
+
+  .lobby-toggle-btn {
+    width: 100% !important;
+  }
+
+  .radar-container {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Session */
+  .session-main-content {
+    flex-direction: column !important;
+    height: calc(100vh - 120px) !important;
+    padding: 0px !important;
+  }
+
+  .session-panel-hidden {
+    display: none !important;
+  }
+
+  .session-panel-active {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    border-right: none !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+    border-top: none !important;
+  }
+
+  .session-msg-input-container {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    padding: 10px !important;
+    background-color: #1a1a1a !important;
+    z-index: 100 !important;
+    border-top: 1px solid #333 !important;
+  }
+
+  .session-chat-box {
+    padding-bottom: 70px !important;
+  }
+
+  /* Forms (Login/Register/Profile) */
+  .profile-page {
+    padding-top: 70px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+  }
+
+  .auth-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 10px !important;
+    padding: 1.5rem !important;
+  }
+
+  .tags-container {
+    flex-wrap: wrap !important;
+  }
+
+  /* MatchNotification Modal */
+  .match-modal-container {
+    width: 95% !important;
+    max-width: 95% !important;
+    padding: 1.5rem !important;
+  }
+
+  .match-btn-group {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .match-btn-group button {
+    width: 100% !important;
+  }
+}

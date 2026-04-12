@@ -30,6 +30,9 @@ const Session = () => {
   const [agenda, setAgenda] = useState(null);
   const [agendaCollapsed, setAgendaCollapsed] = useState(false);
   const [agendaDismissed, setAgendaDismissed] = useState(false);
+  
+  // Mobile layout state
+  const [mobileTab, setMobileTab] = useState('chat'); // 'chat' or 'notes'
 
   const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -298,10 +301,27 @@ const Session = () => {
         </div>
       )}
 
-      <div style={styles.mainContent}>
+      <div style={styles.mainContent} className="session-main-content">
+        
+        {/* Mobile Tab Toggle */}
+        <div className="mobile-only" style={styles.mobileTabNav}>
+          <button 
+            style={{...styles.mobileTabBtn, borderBottom: mobileTab === 'chat' ? '2px solid #01696f' : '2px solid transparent', color: mobileTab === 'chat' ? '#fff' : '#888'}} 
+            onClick={() => setMobileTab('chat')}
+          >
+            💬 Chat
+          </button>
+          <button 
+            style={{...styles.mobileTabBtn, borderBottom: mobileTab === 'notes' ? '2px solid #01696f' : '2px solid transparent', color: mobileTab === 'notes' ? '#fff' : '#888'}} 
+            onClick={() => setMobileTab('notes')}
+          >
+            📝 Notes {agenda && !agendaDismissed && '🌟'}
+          </button>
+        </div>
+
         {/* Left Panel: Chat (60%) */}
-        <div style={styles.leftPanel}>
-          <div style={styles.chatBox}>
+        <div style={styles.leftPanel} className={mobileTab === 'chat' ? "session-panel-active" : "session-panel-hidden"}>
+          <div style={styles.chatBox} className="session-chat-box">
             {messages.map((m, i) => {
               const isSelf = m.senderId === user?.id;
               return (
@@ -346,7 +366,7 @@ const Session = () => {
             })}
             <div ref={messagesEndRef} />
           </div>
-          <div style={styles.chatInputContainer}>
+          <div style={styles.chatInputContainer} className="session-msg-input-container">
             {/* Hidden file input */}
             <input
               ref={fileInputRef}
@@ -383,7 +403,7 @@ const Session = () => {
         </div>
 
         {/* Right Panel: Notes (40%) */}
-        <div style={styles.rightPanel}>
+        <div style={styles.rightPanel} className={mobileTab === 'notes' ? "session-panel-active" : "session-panel-hidden"}>
           {/* ── AI Agenda Card ── */}
           {agenda && !agendaDismissed && (
             <div style={styles.agendaCard}>
@@ -773,6 +793,22 @@ const styles = {
     fontWeight: 600,
     cursor: 'pointer',
   },
+  mobileTabNav: {
+    display: 'none', // Overridden by .mobile-only
+    width: '100%',
+    backgroundColor: '#1a1a1a',
+    borderBottom: '1px solid #333',
+    justifyContent: 'space-between',
+  },
+  mobileTabBtn: {
+    flex: 1,
+    padding: '12px 0',
+    backgroundColor: 'transparent',
+    color: '#888',
+    border: 'none',
+    fontSize: '1rem',
+    fontWeight: 'bold',
+  }
 };
 
 // Inject keyframe animations for banners

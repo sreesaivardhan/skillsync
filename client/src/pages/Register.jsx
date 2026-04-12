@@ -1,6 +1,7 @@
 // Page component for new user registration — handles form input and sign-up request
 
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 
@@ -22,7 +23,7 @@ const TagInput = ({ label, tags, onAdd, onRemove, placeholder }) => {
   return (
     <div style={styles.field}>
       <label style={styles.label}>{label}</label>
-      <div style={styles.tagBox}>
+      <div style={styles.tagBox} className="tags-container">
         {tags.map((tag) => (
           <span
             key={tag}
@@ -57,6 +58,7 @@ const Register = () => {
   const [skillsWanted, setSkillsWanted] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -106,7 +108,7 @@ const Register = () => {
 
   return (
     <div style={styles.page}>
-      <div style={styles.card}>
+      <div style={styles.card} className="auth-card">
         {/* Header */}
         <div style={styles.logoWrap}>
           <span style={styles.logoIcon}>⚡</span>
@@ -149,18 +151,26 @@ const Register = () => {
           {/* Password */}
           <div style={styles.field}>
             <label style={styles.label} htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={6}
-              value={form.password}
-              onChange={handleChange}
-              style={styles.input}
-              placeholder="Min 6 characters"
-            />
+            <div style={{ position: 'relative', width: '100%' }}>
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                minLength={6}
+                value={form.password}
+                onChange={handleChange}
+                style={{ ...styles.input, paddingRight: '48px', width: '100%', boxSizing: 'border-box' }}
+                placeholder="Min 6 characters"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)}
+                style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)',
+                  background:'none', border:'none', color:'#666', cursor:'pointer',
+                  display:'flex', alignItems:'center', padding:'0' }}>
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {/* Skills I can teach */}

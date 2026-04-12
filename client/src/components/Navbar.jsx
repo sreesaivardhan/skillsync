@@ -1,5 +1,6 @@
 // Top navigation bar component with links and the authenticated user's info
 
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import CreditBar from './CreditBar';
@@ -7,6 +8,7 @@ import CreditBar from './CreditBar';
 const Navbar = () => {
   const { user, logout } = useUser();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -16,30 +18,33 @@ const Navbar = () => {
   if (!user) return null;
 
   return (
-    <nav style={styles.nav}>
+    <nav style={styles.nav} className="navbar-container">
       <div style={styles.left}>
         <span style={styles.logoIcon}>⚡</span>
         <span style={styles.logoText}>SkillSync</span>
       </div>
 
-      <div style={styles.center}>
+      <div style={styles.mobileHamburger} className="mobile-only" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        ☰
+      </div>
+
+      <div style={styles.center} className={`navbar-links ${mobileMenuOpen ? 'menu-open' : ''}`}>
         <span style={styles.welcome}>Welcome, </span>
         <span style={styles.username}>{user.username}</span>
       </div>
 
-      <div style={styles.right}>
+      <div style={styles.right} className={`navbar-stats ${mobileMenuOpen ? 'menu-open' : ''}`}>
         <CreditBar />
-        <button 
-          onClick={handleLogout} 
+        <button
+          onClick={() => navigate('/profile')}
+          style={styles.profileBtn}
+        >
+          Profile
+        </button>
+        <button
+          onClick={handleLogout}
           style={styles.logoutBtn}
-          onMouseOver={(e) => {
-            e.currentTarget.style.borderColor = '#f87171';
-            e.currentTarget.style.color = '#f87171';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.borderColor = '#333';
-            e.currentTarget.style.color = '#ccc';
-          }}
+          className="logout-btn"
         >
           Logout
         </button>
@@ -59,7 +64,8 @@ const styles = {
     borderBottom: '1px solid #2a2a2a',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: '0',
     padding: '0 2rem',
     boxSizing: 'border-box',
     zIndex: 1000,
@@ -100,20 +106,38 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: '1.5rem',
-    flex: 1,
+    gap: '20px',
+    marginLeft: 'auto',
+    flexShrink: 0,
   },
   logoutBtn: {
     backgroundColor: 'transparent',
     border: '1px solid #333',
     color: '#ccc',
-    padding: '0.4rem 1rem',
+    padding: '8px 16px',
     borderRadius: '6px',
     fontSize: '0.85rem',
     fontWeight: 500,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
   },
+  profileBtn: {
+    backgroundColor: '#01696f',
+    border: 'none',
+    color: '#fff',
+    padding: '8px 16px',
+    borderRadius: '6px',
+    fontSize: '0.85rem',
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  mobileHamburger: {
+    display: 'none',
+    fontSize: '1.5rem',
+    cursor: 'pointer',
+    color: '#f0f0f0'
+  }
 };
 
 export default Navbar;

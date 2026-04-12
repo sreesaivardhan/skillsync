@@ -35,15 +35,17 @@ const CreditBar = () => {
 
 const styles = {
   container: {
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
-    gap: '0.4rem',
+    gap: '6px',
     backgroundColor: '#111',
     padding: '0.4rem 0.8rem',
     borderRadius: '999px',
     border: '1px solid #333',
     boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)',
-    overflow: 'visible', // to prevent clipping during scale transform
+    overflow: 'visible',
+    width: 'fit-content',
+    whiteSpace: 'nowrap',
   },
   icon: {
     fontSize: '1rem',
