@@ -33,6 +33,7 @@ async function githubGet(url) {
     Accept: 'application/vnd.github+json',
     'User-Agent': 'SkillSync',
   };
+
   if (process.env.GITHUB_TOKEN) {
     headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   }
@@ -42,10 +43,8 @@ async function githubGet(url) {
   if (!res.ok) {
     const text = await res.text();
     console.error(`GitHub API ${res.status} for ${url}:`, text);
-    if (res.status === 403 || res.status === 429) {
-      console.error('GitHub rate limit remaining:', res.headers.get('x-ratelimit-remaining'));
-      console.error('GitHub rate limit reset:',     res.headers.get('x-ratelimit-reset'));
-    }
+    console.error('GitHub rate limit remaining:', res.headers.get('x-ratelimit-remaining'));
+    console.error('GitHub rate limit reset:',     res.headers.get('x-ratelimit-reset'));
     throw new Error(`GitHub API failed: ${res.status}`);
   }
 
