@@ -60,6 +60,22 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    githubId: {
+      type: String,
+      default: null,
+    },
+    githubUsername: {
+      type: String,
+      default: null,
+    },
+    githubConnected: {
+      type: Boolean,
+      default: false,
+    },
+    githubRepos: {
+      type: Array,
+      default: [],
+    },
     resetPasswordToken: {
       type: String,
       default: null,

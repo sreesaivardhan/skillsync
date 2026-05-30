@@ -19,6 +19,7 @@ import debtRoutes from './routes/debt.js';
 import ratingRoutes from './routes/rating.js';
 import analyticsRoutes from './routes/analytics.js';
 import userRoutes from './routes/userRoutes.js';
+import githubRoutes from './routes/githubRoutes.js';
 import { initPresence } from './socket/presence.js';
 import { initMatching } from './socket/matching.js';
 import { initSession } from './socket/session.js';
@@ -54,6 +55,7 @@ app.use('/api/users',     userRoutes);
 app.use('/api/debts',     debtRoutes);
 app.use('/api/rating',    ratingRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/github',    githubRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'SkillSync server running' });

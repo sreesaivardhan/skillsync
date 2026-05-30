@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useUser } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Lock, UserCircle, Award, Coins } from 'lucide-react';
+import { Pencil, Lock, UserCircle, Award, Coins, Github, CheckCircle, ExternalLink } from 'lucide-react';
 
 const API = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
@@ -86,6 +86,15 @@ const Profile = () => {
   const [showPwd, setShowPwd]           = useState(false);
   const [pwdError, setPwdError]         = useState('');
   const [pwdSuccess, setPwdSuccess]     = useState('');
+
+  // ── GitHub state ───────────────────────────────────────────────────────────────
+  const [githubUsername,    setGithubUsername]    = useState('');
+  const [githubLoading,     setGithubLoading]     = useState(false);
+  const [githubSuggestions, setGithubSuggestions] = useState([]);
+  const [githubRepos,       setGithubRepos]       = useState([]);
+  const [githubMessage,     setGithubMessage]     = useState('');
+  const [githubImported,    setGithubImported]    = useState(false);
+  const [githubError,       setGithubError]       = useState('');
 
   useEffect(() => {
     if (!token) return;
@@ -191,6 +200,54 @@ const Profile = () => {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) setProfileData(await res.json());
+  };
+
+  // ── GitHub handlers ───────────────────────────────────────────────────────────
+  const connectGithub = async () => {
+    if (!githubUsername.trim()) return;
+    setGithubLoading(true);
+    setGithubMessage('');
+    setGithubError('');
+    setGithubSuggestions([]);
+    setGithubRepos([]);
+    setGithubImported(false);
+    try {
+      const res = await fetch(`${API}/api/github/connect`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ githubUsername: githubUsername.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Connection failed.');
+      setGithubSuggestions(data.suggestedSkills || []);
+      setGithubRepos(data.repos || []);
+      setGithubMessage(`Connected as @${data.githubUsername}`);
+    } catch (err) {
+      setGithubError(err.message || 'GitHub connection failed.');
+    } finally {
+      setGithubLoading(false);
+    }
+  };
+
+  const importGithubSkills = async () => {
+    try {
+      const res = await fetch(`${API}/api/github/apply-skills`, {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body:    JSON.stringify({ skills: githubSuggestions }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        updateUserLocally(data.user);
+        setProfileData((prev) => ({ ...prev, skillsOffered: data.user.skillsOffered }));
+        setGithubImported(true);
+        setGithubMessage('Skills imported into your profile!');
+      } else {
+        setGithubError(data.message || 'Failed to import skills.');
+      }
+    } catch (err) {
+      setGithubError(err.message || 'Failed to import skills.');
+    }
   };
 
   return (
@@ -369,6 +426,101 @@ const Profile = () => {
               </button>
             </div>
           </form>
+        </div>
+
+        {/* ── GitHub Skill Import Card ───────────────────────────────────── */}
+        <div style={styles.card} className="auth-card">
+          <h3 style={styles.subHeading}>
+            <Github size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+            GitHub Skill Import
+          </h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '0 0 1.2rem' }}>
+            Enter your GitHub username to analyse your public repositories and auto-suggest skills for your profile.
+          </p>
+
+          {/* Input row */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
+            <input
+              type="text"
+              placeholder="e.g. torvalds"
+              value={githubUsername}
+              onChange={(e) => setGithubUsername(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && connectGithub()}
+              style={{ ...styles.formInput, flex: 1 }}
+            />
+            <button
+              onClick={connectGithub}
+              disabled={githubLoading || !githubUsername.trim()}
+              style={{ ...styles.primaryBtn, opacity: (githubLoading || !githubUsername.trim()) ? 0.6 : 1 }}
+            >
+              {githubLoading ? 'Analysing…' : 'Connect'}
+            </button>
+          </div>
+
+          {/* Status messages */}
+          {githubMessage && !githubError && (
+            <p style={styles.ghSuccess}>
+              <CheckCircle size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+              {githubMessage}
+            </p>
+          )}
+          {githubError && <p style={styles.ghError}>{githubError}</p>}
+
+          {/* Suggested skills */}
+          {githubSuggestions.length > 0 && (
+            <div style={styles.ghSection}>
+              <p style={styles.ghSectionTitle}>Suggested skills from your repos:</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '1rem' }}>
+                {githubSuggestions.map((skill) => (
+                  <span key={skill} style={styles.ghSkillPill}>{skill}</span>
+                ))}
+              </div>
+              <button
+                onClick={importGithubSkills}
+                disabled={githubImported}
+                style={{
+                  ...styles.primaryBtn,
+                  opacity: githubImported ? 0.5 : 1,
+                  cursor:  githubImported ? 'default' : 'pointer',
+                }}
+              >
+                {githubImported ? (
+                  <><CheckCircle size={14} style={{ marginRight: '6px' }} /> Imported!</>
+                ) : (
+                  'Import into Skills Offered'
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Repo preview */}
+          {githubRepos.length > 0 && (
+            <div style={{ marginTop: '1.5rem' }}>
+              <p style={styles.ghSectionTitle}>Recent public repositories:</p>
+              <div style={styles.repoGrid}>
+                {githubRepos.slice(0, 6).map((repo) => (
+                  <a
+                    key={repo.name}
+                    href={repo.html_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.repoCard}
+                  >
+                    <div style={styles.repoName}>
+                      {repo.name}
+                      <ExternalLink size={12} style={{ marginLeft: '5px', opacity: 0.6 }} />
+                    </div>
+                    {repo.description && (
+                      <div style={styles.repoDesc}>{repo.description}</div>
+                    )}
+                    {repo.language && (
+                      <span style={styles.repoLang}>{repo.language}</span>
+                    )}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -617,6 +769,91 @@ const styles = {
     textTransform: 'uppercase',
     display: 'inline-flex',
     alignItems: 'center',
+  },
+  // ── GitHub section ──────────────────────────────────────────────────────────
+  ghSuccess: {
+    color: '#22c55e',
+    backgroundColor: 'rgba(34,197,94,0.08)',
+    border: '1px solid rgba(34,197,94,0.25)',
+    borderRadius: '6px',
+    padding: '0.55rem 0.85rem',
+    fontSize: '0.85rem',
+    marginBottom: '1rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
+  ghError: {
+    color: '#dc2626',
+    backgroundColor: 'rgba(220,38,38,0.06)',
+    border: '1px solid rgba(220,38,38,0.2)',
+    borderRadius: '6px',
+    padding: '0.55rem 0.85rem',
+    fontSize: '0.85rem',
+    marginBottom: '1rem',
+  },
+  ghSection: {
+    backgroundColor: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    borderRadius: '10px',
+    padding: '1rem 1.2rem',
+    marginTop: '0.5rem',
+  },
+  ghSectionTitle: {
+    margin: '0 0 0.75rem',
+    fontSize: '0.88rem',
+    fontWeight: 600,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+  },
+  ghSkillPill: {
+    backgroundColor: 'var(--tag-offered-bg)',
+    color: 'var(--tag-offered-text)',
+    padding: '0.35rem 0.85rem',
+    borderRadius: '20px',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+  },
+  repoGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+    gap: '10px',
+  },
+  repoCard: {
+    display: 'block',
+    backgroundColor: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    borderRadius: '8px',
+    padding: '0.75rem 1rem',
+    textDecoration: 'none',
+    transition: 'border-color 0.2s',
+  },
+  repoName: {
+    fontWeight: 600,
+    fontSize: '0.88rem',
+    color: 'var(--accent)',
+    display: 'inline-flex',
+    alignItems: 'center',
+    marginBottom: '4px',
+    wordBreak: 'break-all',
+  },
+  repoDesc: {
+    fontSize: '0.78rem',
+    color: 'var(--text-muted)',
+    lineHeight: 1.4,
+    marginBottom: '6px',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+  },
+  repoLang: {
+    fontSize: '0.75rem',
+    backgroundColor: 'var(--tag-wanted-bg)',
+    color: 'var(--tag-wanted-text)',
+    padding: '2px 8px',
+    borderRadius: '10px',
+    fontWeight: 500,
   },
 };
 
