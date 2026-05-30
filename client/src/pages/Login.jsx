@@ -101,6 +101,31 @@ const Login = () => {
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
+
+          {/* ── Google OAuth ─────────────────────────────────── */}
+          <div style={styles.divider}>
+            <span style={styles.dividerLine} />
+            <span style={styles.dividerText}>or</span>
+            <span style={styles.dividerLine} />
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              (window.location.href = `${
+                import.meta.env.VITE_SERVER_URL || 'http://localhost:5000'
+              }/api/auth/google`)
+            }
+            style={styles.googleBtn}
+          >
+            <img
+              src="https://www.google.com/favicon.ico"
+              width="18"
+              height="18"
+              alt="Google"
+            />
+            Continue with Google
+          </button>
         </form>
 
         <p style={styles.footer}>
@@ -221,6 +246,38 @@ const styles = {
     color: 'var(--accent)',
     textDecoration: 'none',
     fontWeight: 600,
+  },
+  divider: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    margin: '0.25rem 0',
+  },
+  dividerLine: {
+    flex: 1,
+    height: '1px',
+    backgroundColor: 'var(--border)',
+  },
+  dividerText: {
+    color: 'var(--text-muted)',
+    fontSize: '0.8rem',
+    flexShrink: 0,
+  },
+  googleBtn: {
+    width: '100%',
+    padding: '0.72rem',
+    background: 'var(--surface)',
+    color: 'var(--text)',
+    border: '1px solid var(--border)',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+    fontWeight: 500,
+    fontSize: '0.95rem',
+    transition: 'border-color 0.2s, background 0.2s',
   },
 };
 

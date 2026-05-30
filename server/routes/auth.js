@@ -1,8 +1,9 @@
-// Express router for authentication routes: /register and /login
+// Express router for authentication routes: /register, /login, and /google OAuth
 
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import passport from 'passport';
 import { body, validationResult } from 'express-validator';
 
 import User from '../models/User.js';
@@ -157,5 +158,29 @@ router.put('/password', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Server error updating password' });
   }
 });
+
+// ── GET /api/auth/google — initiate Google OAuth ──────────────────────────────
+router.get(
+  '/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+// ── GET /api/auth/google/callback — Google redirects here after auth ───────────
+router.get(
+  '/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: `${process.env.CLIENT_URL}/login`,
+    session: false,
+  }),
+  (req, res) => {
+    const token = jwt.sign(
+      { id: req.user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    // Redirect to frontend with token — AuthCallback.jsx picks it up
+    res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+  }
+);
 
 export default router;

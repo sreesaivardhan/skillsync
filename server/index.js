@@ -5,6 +5,9 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import session from 'express-session';
+import passport from 'passport';
+import './config/passport.js';
 
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.js';
@@ -31,6 +34,15 @@ app.use(
   })
 );
 app.use(express.json());
+
+// ── Session + Passport (required for Google OAuth) ───────────────────────────
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'skillsync_secret',
+  resave: false,
+  saveUninitialized: false,
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth',      authRoutes);

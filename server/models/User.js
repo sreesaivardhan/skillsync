@@ -4,6 +4,10 @@ import mongoose from 'mongoose';
 
 const UserSchema = new mongoose.Schema(
   {
+    googleId: {
+      type: String,
+      default: null,
+    },
     username: {
       type: String,
       required: true,
@@ -19,7 +23,8 @@ const UserSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
+      default: null,
     },
     skillsOffered: [
       {
