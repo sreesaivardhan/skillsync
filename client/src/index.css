@@ -127,38 +127,31 @@ body {
     padding: 0 !important;
   }
 
-  /* Navbar */
+  /* Navbar — hamburger visible, bar stays 64px, no wrapping */
   .mobile-only {
     display: flex !important;
   }
 
   .navbar-container {
-    flex-wrap: wrap !important;
-    padding: 10px !important;
+    flex-wrap: nowrap !important;
+    padding: 0 1rem !important;
+    height: 64px !important;
+    overflow: visible !important;
   }
 
+  /* Hide desktop center + right sections; the drawer handles mobile nav */
   .navbar-stats {
     display: none !important;
-    flex: 1 1 100% !important;
-    justify-content: center !important;
-    margin-top: 10px !important;
-    gap: 20px !important;
-  }
-
-  .navbar-stats.menu-open {
-    display: flex !important;
   }
 
   .navbar-links {
     display: none !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 10px !important;
-    margin-top: 15px !important;
   }
 
+  /* menu-open classes are kept for compatibility but have no visual effect */
+  .navbar-stats.menu-open,
   .navbar-links.menu-open {
-    display: flex !important;
+    display: none !important;
   }
 
   /* Lobby */
