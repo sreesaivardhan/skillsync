@@ -1,5 +1,3 @@
-// Handles the redirect from Google OAuth — extracts token, stores user, navigates to lobby
-
 import { useEffect } from 'react';
 
 export default function AuthCallback() {
@@ -12,7 +10,7 @@ export default function AuthCallback() {
       return;
     }
 
-    localStorage.setItem('token', token);
+    localStorage.setItem('ss_token', token);
 
     const API = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
@@ -21,10 +19,8 @@ export default function AuthCallback() {
     })
       .then((r) => r.json())
       .then((user) => {
-        // Normalise _id → id so UserContext is consistent
         const normalised = { ...user, id: user._id || user.id };
-        localStorage.setItem('user', JSON.stringify(normalised));
-        // Hard redirect — forces UserContext to re-read localStorage cleanly
+        localStorage.setItem('ss_user', JSON.stringify(normalised));
         window.location.href = '/lobby';
       })
       .catch(() => {
