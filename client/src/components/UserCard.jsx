@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import SkillBadge from './SkillBadge';
+import { Coins } from 'lucide-react';
 
 const UserCard = ({ user }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -9,14 +10,14 @@ const UserCard = ({ user }) => {
   if (!user) return null;
 
   const { username, skillsOffered = [], skillsWanted = [], status, credits } = user;
-  
   const isAvailable = status === 'available';
 
   return (
-    <div 
+    <div
       style={{
         ...styles.card,
-        borderColor: isHovered ? '#01696f' : '#2a2a2a'
+        borderColor: isHovered ? 'var(--accent)' : 'var(--border)',
+        boxShadow: isHovered ? '0 4px 16px rgba(0,0,0,0.12)' : 'none',
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -25,11 +26,11 @@ const UserCard = ({ user }) => {
       <div style={styles.topRow}>
         <span style={styles.username}>{username}</span>
         <div style={styles.statusBadge}>
-          <span 
+          <span
             style={{
-              ...styles.statusDot, 
-              backgroundColor: isAvailable ? '#22c55e' : '#eab308' 
-            }} 
+              ...styles.statusDot,
+              backgroundColor: isAvailable ? '#22c55e' : '#eab308',
+            }}
           />
           <span style={styles.statusText}>
             {isAvailable ? 'Available' : 'In Session'}
@@ -68,7 +69,10 @@ const UserCard = ({ user }) => {
 
       {/* Bottom Row: Credits */}
       <div style={styles.bottomRow}>
-        <span style={styles.creditsText}>🪙 {credits} credits</span>
+        <span style={styles.creditsText}>
+          <Coins size={14} style={{ marginRight: '4px', verticalAlign: 'middle', color: 'var(--text-muted)' }} />
+          {credits} credits
+        </span>
       </div>
     </div>
   );
@@ -76,14 +80,14 @@ const UserCard = ({ user }) => {
 
 const styles = {
   card: {
-    backgroundColor: '#1e1e1e',
-    border: '1px solid #2a2a2a',
+    backgroundColor: 'var(--surface)',
+    border: '1px solid var(--border)',
     borderRadius: '10px',
     padding: '1rem',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.8rem',
-    transition: 'border-color 0.25s ease',
+    transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
   },
   topRow: {
     display: 'flex',
@@ -93,13 +97,13 @@ const styles = {
   username: {
     fontWeight: 'bold',
     fontSize: '1rem',
-    color: '#f0f0f0',
+    color: 'var(--text)',
   },
   statusBadge: {
     display: 'flex',
     alignItems: 'center',
     gap: '0.3rem',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(128,128,128,0.1)',
     padding: '0.2rem 0.5rem',
     borderRadius: '999px',
   },
@@ -110,7 +114,7 @@ const styles = {
   },
   statusText: {
     fontSize: '0.75rem',
-    color: '#ccc',
+    color: 'var(--text-muted)',
     fontWeight: 500,
   },
   skillsSection: {
@@ -125,9 +129,10 @@ const styles = {
   },
   skillLabel: {
     fontSize: '0.75rem',
-    color: '#888',
+    color: 'var(--text-muted)',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
+    fontWeight: 600,
   },
   skillList: {
     display: 'flex',
@@ -136,8 +141,9 @@ const styles = {
   },
   emptySkill: {
     fontSize: '0.8rem',
-    color: '#555',
+    color: 'var(--text-muted)',
     fontStyle: 'italic',
+    opacity: 0.6,
   },
   bottomRow: {
     marginTop: '0.2rem',
@@ -146,9 +152,11 @@ const styles = {
   },
   creditsText: {
     fontSize: '0.85rem',
-    color: '#777',
+    color: 'var(--text-muted)',
     fontWeight: 500,
-  }
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
 };
 
 export default UserCard;

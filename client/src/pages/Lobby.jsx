@@ -1,7 +1,7 @@
 // Page component for the real-time lobby where users browse and match with others
 
 import { useState, useEffect } from 'react';
-import { BarChart2, Radar } from 'lucide-react';
+import { BarChart2, Radar, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import socket from '../socket';
 import { useUser } from '../context/UserContext';
@@ -10,7 +10,6 @@ import UserCard from '../components/UserCard';
 import MatchNotification from '../components/MatchNotification';
 import SkillDebtTracker from '../components/SkillDebtTracker';
 import SkillRadarChart from '../components/SkillRadarChart';
-import SkillBadge from '../components/SkillBadge';
 
 const Lobby = () => {
   const { user } = useUser();
@@ -29,54 +28,45 @@ const Lobby = () => {
     if (!user) return;
 
     const handleLobbyUpdate = (users) => {
-      // Filter out current user from the lobby list
       setOnlineUsers(users.filter(u => String(u.userId) !== String(user.id)));
     };
-
     const handleMatchFound = (data) => {
       setMatchData(data);
       setIsSearching(false);
     };
-
     const handleMatchTimeout = () => {
       setIsSearching(false);
       setTimeoutMsg("No match found. Try again.");
     };
-
     const handleMatchSearching = () => {
       setIsSearching(true);
       setTimeoutMsg(null);
     };
-
     const handleMatchDeclined = ({ message }) => {
-      // The OTHER user got declined — reset our match state and show toast
       setMatchData(null);
       setIsSearching(false);
       setDeclinedToast(message || 'Your match declined. Looking for a new one...');
       setTimeout(() => setDeclinedToast(null), 3000);
     };
-
-    socket.on('lobby:update', handleLobbyUpdate);
-    socket.on('match:found', handleMatchFound);
-    socket.on('match:timeout', handleMatchTimeout);
-    socket.on('match:searching', handleMatchSearching);
-    socket.on('match:declined', handleMatchDeclined);
-
-    // Keep badge count live when server emits after session completion
     const handleDebtUpdate = ({ debts }) => setDebtCount(debts?.length ?? 0);
-    socket.on('debt:update', handleDebtUpdate);
+
+    socket.on('lobby:update',    handleLobbyUpdate);
+    socket.on('match:found',     handleMatchFound);
+    socket.on('match:timeout',   handleMatchTimeout);
+    socket.on('match:searching', handleMatchSearching);
+    socket.on('match:declined',  handleMatchDeclined);
+    socket.on('debt:update',     handleDebtUpdate);
 
     return () => {
-      socket.off('lobby:update', handleLobbyUpdate);
-      socket.off('match:found', handleMatchFound);
-      socket.off('match:timeout', handleMatchTimeout);
+      socket.off('lobby:update',    handleLobbyUpdate);
+      socket.off('match:found',     handleMatchFound);
+      socket.off('match:timeout',   handleMatchTimeout);
       socket.off('match:searching', handleMatchSearching);
-      socket.off('match:declined', handleMatchDeclined);
-      socket.off('debt:update', handleDebtUpdate);
+      socket.off('match:declined',  handleMatchDeclined);
+      socket.off('debt:update',     handleDebtUpdate);
     };
   }, [user]);
 
-  // Pre-fetch initial debt count for the badge on mount
   useEffect(() => {
     if (!user) return;
     const token = localStorage.getItem('ss_token');
@@ -92,15 +82,13 @@ const Lobby = () => {
   const handleFindMatch = () => {
     socket.emit('match:request', { userId: user.id });
   };
-
   const handleAcceptMatch = () => {
     if (!matchData) return;
     const { roomId } = matchData;
-    socket.emit('match:accept', { roomId, userId: user.id });
-    socket.emit('room:join', { roomId, userId: user.id });
+    socket.emit('match:accept',  { roomId, userId: user.id });
+    socket.emit('room:join',     { roomId, userId: user.id });
     navigate(`/session/${roomId}`);
   };
-
   const handleDeclineMatch = () => {
     if (!matchData) return;
     const { roomId } = matchData;
@@ -121,9 +109,7 @@ const Lobby = () => {
           </div>
           <div style={styles.userList}>
             {onlineUsers.length > 0 ? (
-              onlineUsers.map(u => (
-                <UserCard key={u.userId} user={u} />
-              ))
+              onlineUsers.map(u => <UserCard key={u.userId} user={u} />)
             ) : (
               <p style={styles.emptyText}>No other users are currently online.</p>
             )}
@@ -133,16 +119,18 @@ const Lobby = () => {
         {/* Right Panel */}
         <div style={styles.rightPanel} className="lobby-right-panel">
           <div style={styles.matchCard}>
+            <Target size={40} color="var(--accent)" style={{ marginBottom: '0.75rem' }} />
             <h2 style={styles.matchHeading}>Ready to learn?</h2>
-            <p style={styles.matchSub}>We will pair you with someone whose skills match your interests.</p>
-            
-            <button 
-              onClick={handleFindMatch} 
+            <p style={styles.matchSub}>
+              We will pair you with someone whose skills match your interests.
+            </p>
+            <button
+              onClick={handleFindMatch}
               disabled={isSearching}
               style={{
                 ...styles.findBtn,
                 opacity: isSearching ? 0.7 : 1,
-                cursor: isSearching ? 'not-allowed' : 'pointer'
+                cursor: isSearching ? 'not-allowed' : 'pointer',
               }}
             >
               {isSearching ? (
@@ -151,13 +139,11 @@ const Lobby = () => {
                 </span>
               ) : 'Find Match'}
             </button>
-            
             {timeoutMsg && <p style={styles.timeoutMsg}>{timeoutMsg}</p>}
           </div>
         </div>
       </div>
 
-      {/* Match Notification Modal */}
       {matchData && (
         <MatchNotification
           matchData={matchData}
@@ -166,14 +152,13 @@ const Lobby = () => {
         />
       )}
 
-      {/* Declined Toast */}
       {declinedToast && (
         <div style={styles.declinedToast}>
           <span>⚠️ {declinedToast}</span>
         </div>
       )}
 
-      {/* ── Skill Debts collapsible section ────────────────────────────────── */}
+      {/* ── Skill Debts ── */}
       <div style={styles.debtSection}>
         <button
           id="skill-debts-toggle"
@@ -190,11 +175,10 @@ const Lobby = () => {
           {debtCount > 0 && (
             <span style={styles.debtBadge}>{debtCount}</span>
           )}
-          <span style={{ marginLeft: 'auto', color: '#888', fontSize: '0.8rem' }}>
+          <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
             {showDebts ? '▲ Hide' : '▼ Show'}
           </span>
         </button>
-
         {showDebts && (
           <div style={styles.debtTrackerWrap}>
             <SkillDebtTracker />
@@ -202,7 +186,7 @@ const Lobby = () => {
         )}
       </div>
 
-      {/* ── Skill Radar collapsible section ────────────────────────────────── */}
+      {/* ── Skill Radar ── */}
       <div style={styles.debtSection}>
         <button
           className="lobby-toggle-btn"
@@ -217,11 +201,10 @@ const Lobby = () => {
             <Radar size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
             Skill Radar
           </span>
-          <span style={{ marginLeft: 'auto', color: '#888', fontSize: '0.8rem' }}>
+          <span style={{ marginLeft: 'auto', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
             {showRadar ? '▲ Hide' : '▼ Show'}
           </span>
         </button>
-
         {showRadar && (
           <div style={styles.debtTrackerWrap} className="radar-container">
             <SkillRadarChart />
@@ -235,10 +218,10 @@ const Lobby = () => {
 const styles = {
   page: {
     minHeight: '100vh',
-    backgroundColor: '#0f0f0f',
-    paddingTop: '64px', // Space for Navbar
-    fontFamily: "'Inter', 'Segoe UI', sans-serif",
-    color: '#f0f0f0',
+    backgroundColor: 'var(--bg)',
+    paddingTop: '64px',
+    color: 'var(--text)',
+    transition: 'background-color 0.25s ease',
   },
   mainContainer: {
     display: 'flex',
@@ -251,28 +234,30 @@ const styles = {
   },
   leftPanel: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'var(--surface)',
     borderRadius: '12px',
-    border: '1px solid #2a2a2a',
+    border: '1px solid var(--border)',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
   },
   panelHeader: {
     padding: '1.5rem',
-    borderBottom: '1px solid #2a2a2a',
+    borderBottom: '1px solid var(--border)',
     display: 'flex',
     alignItems: 'center',
     gap: '0.8rem',
+    backgroundColor: 'var(--surface)',
   },
   heading: {
     margin: 0,
     fontSize: '1.2rem',
     fontWeight: 600,
+    color: 'var(--text)',
   },
   badge: {
-    backgroundColor: '#01696f',
-    color: '#fff',
+    backgroundColor: 'var(--accent)',
+    color: 'var(--tag-offered-text)',
     padding: '0.2rem 0.6rem',
     borderRadius: '999px',
     fontSize: '0.8rem',
@@ -287,10 +272,11 @@ const styles = {
     gap: '1rem',
   },
   emptyText: {
-    color: '#888',
+    color: 'var(--text-muted)',
     fontSize: '0.9rem',
     textAlign: 'center',
     marginTop: '2rem',
+    opacity: 0.7,
   },
   rightPanel: {
     flex: 1,
@@ -299,9 +285,9 @@ const styles = {
     justifyContent: 'center',
   },
   matchCard: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: 'var(--surface)',
     borderRadius: '12px',
-    border: '1px solid #2a2a2a',
+    border: '1px solid var(--border)',
     padding: '3rem 2rem',
     width: '100%',
     maxWidth: '400px',
@@ -309,28 +295,30 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+    boxShadow: 'var(--card-shadow)',
   },
   matchHeading: {
     margin: '0 0 0.5rem 0',
     fontSize: '1.6rem',
-    color: '#f0f0f0',
+    color: 'var(--text)',
+    fontWeight: 700,
   },
   matchSub: {
     margin: '0 0 2rem 0',
-    color: '#888',
+    color: 'var(--text-muted)',
     fontSize: '0.95rem',
     lineHeight: 1.5,
   },
   findBtn: {
-    backgroundColor: '#01696f',
-    color: '#fff',
+    backgroundColor: 'var(--btn-primary-bg)',
+    color: 'var(--btn-primary-text)',
     border: 'none',
     padding: '1rem 2rem',
     borderRadius: '8px',
     fontSize: '1.1rem',
     fontWeight: 600,
     width: '100%',
-    transition: 'background-color 0.2s',
+    transition: 'opacity 0.2s',
   },
   flexCenter: {
     display: 'flex',
@@ -342,12 +330,13 @@ const styles = {
     width: '16px',
     height: '16px',
     border: '2px solid rgba(255,255,255,0.3)',
-    borderTopColor: '#fff',
+    borderTopColor: 'currentColor',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
+    display: 'inline-block',
   },
   timeoutMsg: {
-    color: '#f87171',
+    color: '#dc2626',
     fontSize: '0.9rem',
     marginTop: '1.5rem',
   },
@@ -356,15 +345,15 @@ const styles = {
     bottom: '2rem',
     left: '50%',
     transform: 'translateX(-50%)',
-    backgroundColor: '#292524',
-    border: '1px solid #78350f',
-    color: '#fcd34d',
+    backgroundColor: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    color: 'var(--text)',
     padding: '0.85rem 1.5rem',
     borderRadius: '10px',
     fontSize: '0.95rem',
     fontWeight: 500,
     zIndex: 9998,
-    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+    boxShadow: 'var(--card-shadow)',
     animation: 'fadein 0.3s ease-out',
     whiteSpace: 'nowrap',
   },
@@ -378,11 +367,11 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '0.75rem',
-    backgroundColor: '#1a1a1a',
-    border: '1px solid #2a2a2a',
+    backgroundColor: 'var(--surface)',
+    border: '1px solid var(--border)',
     borderRadius: '12px',
     padding: '0.9rem 1.25rem',
-    color: '#f0f0f0',
+    color: 'var(--text)',
     fontSize: '1rem',
     fontWeight: 600,
     cursor: 'pointer',
@@ -399,21 +388,23 @@ const styles = {
     lineHeight: 1.6,
   },
   debtTrackerWrap: {
-    backgroundColor: '#141414',
-    border: '1px solid #2a2a2a',
+    backgroundColor: 'var(--bg)',
+    border: '1px solid var(--border)',
     borderTop: 'none',
     borderRadius: '0 0 12px 12px',
     padding: '1.25rem',
   },
-
 };
 
-// Add keyframes for spinner dynamically to avoid needing a separate CSS file
 if (typeof document !== 'undefined') {
   const styleSheet = document.createElement('style');
   styleSheet.innerHTML = `
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+    @keyframes fadein {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
   `;
   document.head.appendChild(styleSheet);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useUser } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
+import { Pencil, Lock, UserCircle, Award, Coins } from 'lucide-react';
 
 const API = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
@@ -13,24 +14,16 @@ const ProfileTagInput = ({ label, tags, onAdd, onRemove, placeholder, withLevel 
   const handleAdd = () => {
     const val = input.trim();
     if (!val) return;
-    
     if (withLevel) {
-      if (!tags.find(t => t.skill === val)) {
-        onAdd({ skill: val, level });
-      }
+      if (!tags.find(t => t.skill === val)) onAdd({ skill: val, level });
     } else {
-      if (!tags.includes(val)) {
-        onAdd(val);
-      }
+      if (!tags.includes(val)) onAdd(val);
     }
     setInput('');
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAdd();
-    }
+    if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }
   };
 
   return (
@@ -40,11 +33,15 @@ const ProfileTagInput = ({ label, tags, onAdd, onRemove, placeholder, withLevel 
         {tags.map((tag, idx) => {
           const isObj = typeof tag === 'object';
           const text = isObj ? `${tag.skill} (${tag.level})` : tag;
-          const id = isObj ? tag.skill : tag;
+          const id   = isObj ? tag.skill : tag;
           return (
             <span
               key={idx}
-              style={{ ...styles.pill, backgroundColor: withLevel ? '#01696f' : '#ea580c' }}
+              style={{
+                ...styles.pill,
+                backgroundColor: withLevel ? 'var(--tag-offered-bg)' : 'var(--tag-wanted-bg)',
+                color:           withLevel ? 'var(--tag-offered-text)' : 'var(--tag-wanted-text)',
+              }}
               onClick={() => onRemove(id)}
               title="Click to remove"
             >
@@ -80,29 +77,24 @@ const Profile = () => {
   const { user, token, updateUserLocally } = useUser();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading]           = useState(true);
+  const [isEditing, setIsEditing]       = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [savingPwd, setSavingPwd] = useState(false);
-  
-  const [profileData, setProfileData] = useState(null);
-  
-  const [pwdForm, setPwdForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-  const [showPwd, setShowPwd] = useState(false);
-  const [pwdError, setPwdError] = useState('');
-  const [pwdSuccess, setPwdSuccess] = useState('');
+  const [savingPwd, setSavingPwd]       = useState(false);
+  const [profileData, setProfileData]   = useState(null);
+  const [pwdForm, setPwdForm]           = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [showPwd, setShowPwd]           = useState(false);
+  const [pwdError, setPwdError]         = useState('');
+  const [pwdSuccess, setPwdSuccess]     = useState('');
 
   useEffect(() => {
     if (!token) return;
     const fetchProfile = async () => {
       try {
         const res = await fetch(`${API}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) {
-          const data = await res.json();
-          setProfileData(data);
-        }
+        if (res.ok) setProfileData(await res.json());
       } catch (err) {
         console.error('Error fetching profile:', err);
       } finally {
@@ -113,20 +105,24 @@ const Profile = () => {
   }, [token]);
 
   if (!user || loading || !profileData) {
-    return <div style={styles.page}><Navbar /><div style={{padding:'100px', textAlign:'center'}}>Loading Profile...</div></div>;
+    return (
+      <div style={styles.page}>
+        <Navbar />
+        <div style={{ padding: '100px', textAlign: 'center', color: 'var(--text-muted)' }}>
+          Loading Profile...
+        </div>
+      </div>
+    );
   }
 
-  // Edit Handlers
-  const handleProfileChange = (e) => setProfileData({ ...profileData, [e.target.name]: e.target.value });
-  
-  // Tag Handlers
-  const addOffered = (skillObj) => setProfileData(p => ({ ...p, skillsOffered: [...p.skillsOffered, skillObj] }));
-  const removeOffered = (skillName) => setProfileData(p => ({ ...p, skillsOffered: p.skillsOffered.filter(s => s.skill !== skillName) }));
-  
-  const addWanted = (skillStr) => setProfileData(p => ({ ...p, skillsWanted: [...p.skillsWanted, skillStr] }));
-  const removeWanted = (skillStr) => setProfileData(p => ({ ...p, skillsWanted: p.skillsWanted.filter(s => s !== skillStr) }));
+  const handleProfileChange = (e) =>
+    setProfileData({ ...profileData, [e.target.name]: e.target.value });
 
-  // Form Submits
+  const addOffered    = (skillObj) => setProfileData(p => ({ ...p, skillsOffered: [...p.skillsOffered, skillObj] }));
+  const removeOffered = (n)        => setProfileData(p => ({ ...p, skillsOffered: p.skillsOffered.filter(s => s.skill !== n) }));
+  const addWanted     = (s)        => setProfileData(p => ({ ...p, skillsWanted: [...p.skillsWanted, s] }));
+  const removeWanted  = (s)        => setProfileData(p => ({ ...p, skillsWanted: p.skillsWanted.filter(x => x !== s) }));
+
   const handleSaveProfile = async () => {
     setSavingProfile(true);
     try {
@@ -136,8 +132,8 @@ const Profile = () => {
         body: JSON.stringify({
           username: profileData.username,
           skillsOffered: profileData.skillsOffered,
-          skillsWanted: profileData.skillsWanted
-        })
+          skillsWanted:  profileData.skillsWanted,
+        }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -160,7 +156,6 @@ const Profile = () => {
     e.preventDefault();
     setPwdError('');
     setPwdSuccess('');
-
     if (pwdForm.newPassword !== pwdForm.confirmPassword) {
       setPwdError("New passwords don't match.");
       return;
@@ -172,8 +167,8 @@ const Profile = () => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           currentPassword: pwdForm.currentPassword,
-          newPassword: pwdForm.newPassword
-        })
+          newPassword:     pwdForm.newPassword,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -192,20 +187,21 @@ const Profile = () => {
 
   const cancelEdit = async () => {
     setIsEditing(false);
-    // Refresh to previous state
-    const res = await fetch(`${API}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`${API}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (res.ok) setProfileData(await res.json());
   };
 
   return (
     <div style={styles.page} className="profile-page">
       <Navbar />
-      
+
       <div style={styles.mainContainer} className="profile-container">
-        <button onClick={() => navigate('/lobby')}
-          style={{ display:'flex', alignItems:'center', gap:'6px', alignSelf: 'flex-start', background:'none',
-            border:'1px solid #444', color:'#aaa', padding:'8px 14px',
-            borderRadius:'6px', cursor:'pointer', marginBottom:'0px', fontSize:'14px' }}>
+        <button
+          onClick={() => navigate('/lobby')}
+          style={styles.backBtn}
+        >
           ← Back to Lobby
         </button>
 
@@ -213,7 +209,9 @@ const Profile = () => {
         <div style={styles.card} className="auth-card profile-card">
           <div style={styles.headerRow} className="profile-header-row">
             <div style={styles.avatarWrap} className="profile-avatar-wrap">
-              <div style={styles.avatar}>{profileData.username.charAt(0).toUpperCase()}</div>
+              <div style={styles.avatar}>
+                <UserCircle size={36} color="var(--navbar-text)" strokeWidth={1.5} />
+              </div>
               {isEditing ? (
                 <input
                   type="text"
@@ -226,13 +224,16 @@ const Profile = () => {
                 <h2 style={styles.heading}>{profileData.username}</h2>
               )}
             </div>
-            
+
             {!isEditing ? (
-              <button style={styles.tealBtn} onClick={() => setIsEditing(true)}>Edit Profile</button>
+              <button style={styles.primaryBtn} onClick={() => setIsEditing(true)}>
+                <Pencil size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Edit Profile
+              </button>
             ) : (
-              <div style={{display:'flex', gap:'10px'}}>
+              <div style={{ display: 'flex', gap: '10px' }}>
                 <button style={styles.cancelBtn} onClick={cancelEdit} disabled={savingProfile}>Cancel</button>
-                <button style={styles.tealBtn} onClick={handleSaveProfile} disabled={savingProfile}>
+                <button style={styles.primaryBtn} onClick={handleSaveProfile} disabled={savingProfile}>
                   {savingProfile ? 'Saving...' : 'Save'}
                 </button>
               </div>
@@ -247,21 +248,19 @@ const Profile = () => {
           </div>
 
           <div style={styles.skillsSection}>
-            <h3 style={styles.subHeading}>Skills You Can Teach</h3>
+            <h3 style={styles.subHeading}>
+              <Award size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+              Skills You Can Teach
+            </h3>
             {isEditing ? (
-              <ProfileTagInput
-                label=""
-                tags={profileData.skillsOffered}
-                onAdd={addOffered}
-                onRemove={removeOffered}
-                placeholder="e.g. Python, Yoga..."
-                withLevel={true}
-              />
+              <ProfileTagInput label="" tags={profileData.skillsOffered}
+                onAdd={addOffered} onRemove={removeOffered}
+                placeholder="e.g. Python, Yoga..." withLevel={true} />
             ) : (
               <div style={styles.tagsContainer} className="tags-container">
                 {profileData.skillsOffered.length > 0 ? (
                   profileData.skillsOffered.map((s, i) => (
-                    <span key={i} style={{ ...styles.pill, backgroundColor: '#01696f' }}>
+                    <span key={i} style={{ ...styles.pill, backgroundColor: 'var(--tag-offered-bg)', color: 'var(--tag-offered-text)' }}>
                       {s.skill} ({s.level || 'Beginner'})
                     </span>
                   ))
@@ -275,19 +274,14 @@ const Profile = () => {
           <div style={styles.skillsSection}>
             <h3 style={styles.subHeading}>Skills You Want to Learn</h3>
             {isEditing ? (
-              <ProfileTagInput
-                label=""
-                tags={profileData.skillsWanted}
-                onAdd={addWanted}
-                onRemove={removeWanted}
-                placeholder="e.g. Spanish, SEO..."
-                withLevel={false}
-              />
+              <ProfileTagInput label="" tags={profileData.skillsWanted}
+                onAdd={addWanted} onRemove={removeWanted}
+                placeholder="e.g. Spanish, SEO..." withLevel={false} />
             ) : (
               <div style={styles.tagsContainer} className="tags-container">
                 {profileData.skillsWanted.length > 0 ? (
                   profileData.skillsWanted.map((s, i) => (
-                    <span key={i} style={{ ...styles.pill, backgroundColor: '#ea580c' }}>
+                    <span key={i} style={{ ...styles.pill, backgroundColor: 'var(--tag-wanted-bg)', color: 'var(--tag-wanted-text)' }}>
                       {typeof s === 'string' ? s : s.skill}
                     </span>
                   ))
@@ -297,10 +291,13 @@ const Profile = () => {
               </div>
             )}
           </div>
-          
-          {/* Stats Panel */}
+
+          {/* Stats */}
           <div style={styles.skillsSection}>
-            <h3 style={styles.subHeading}>Stats Panel</h3>
+            <h3 style={styles.subHeading}>
+              <Award size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+              Stats Panel
+            </h3>
             <div style={styles.statsGrid} className="stats-grid">
               <div style={styles.statBox}>
                 <div style={styles.statVal}>{profileData.reputationScore}</div>
@@ -315,8 +312,11 @@ const Profile = () => {
                 <div style={styles.statLabel}>Ratings</div>
               </div>
               <div style={styles.statBox}>
-                <div style={{...styles.statVal, color:'#22c55e'}}>{profileData.credits}</div>
-                <div style={styles.statLabel}>Credits</div>
+                <div style={{ ...styles.statVal, color: 'var(--accent)' }}>{profileData.credits}</div>
+                <div style={styles.statLabel}>
+                  <Coins size={12} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
+                  Credits
+                </div>
               </div>
             </div>
           </div>
@@ -324,45 +324,47 @@ const Profile = () => {
 
         {/* Change Password Card */}
         <div style={styles.card} className="auth-card">
-          <h3 style={styles.subHeading}>Change Password</h3>
+          <h3 style={styles.subHeading}>
+            <Lock size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Change Password
+          </h3>
           <form style={styles.section} onSubmit={handleSavePassword}>
             <div style={styles.field}>
               <label style={styles.label}>Current Password</label>
               <input
-                type={showPwd ? "text" : "password"}
+                type={showPwd ? 'text' : 'password'}
                 value={pwdForm.currentPassword}
-                onChange={e => setPwdForm({...pwdForm, currentPassword: e.target.value})}
+                onChange={e => setPwdForm({ ...pwdForm, currentPassword: e.target.value })}
                 required style={styles.formInput}
               />
             </div>
             <div style={styles.field}>
               <label style={styles.label}>New Password</label>
               <input
-                type={showPwd ? "text" : "password"}
+                type={showPwd ? 'text' : 'password'}
                 value={pwdForm.newPassword}
-                onChange={e => setPwdForm({...pwdForm, newPassword: e.target.value})}
-                required style={styles.formInput}
-                minLength={6}
+                onChange={e => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
+                required style={styles.formInput} minLength={6}
               />
             </div>
             <div style={styles.field}>
               <label style={styles.label}>Confirm New Password</label>
               <input
-                type={showPwd ? "text" : "password"}
+                type={showPwd ? 'text' : 'password'}
                 value={pwdForm.confirmPassword}
-                onChange={e => setPwdForm({...pwdForm, confirmPassword: e.target.value})}
-                required style={styles.formInput}
-                minLength={6}
+                onChange={e => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })}
+                required style={styles.formInput} minLength={6}
               />
             </div>
-            {pwdError && <p style={{ color: '#ef4444', fontSize: '13px', margin: '8px 0 0' }}>{pwdError}</p>}
-            {pwdSuccess && <p style={{ color: '#22c55e', fontSize: '13px', margin: '8px 0 0' }}>{pwdSuccess}</p>}
-            
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-              <label style={{color: '#888', fontSize:'0.9rem'}}>
-                <input type="checkbox" checked={showPwd} onChange={() => setShowPwd(!showPwd)} /> Show Passwords
+            {pwdError   && <p style={{ color: '#dc2626', fontSize: '13px', margin: '8px 0 0' }}>{pwdError}</p>}
+            {pwdSuccess  && <p style={{ color: '#22c55e', fontSize: '13px', margin: '8px 0 0' }}>{pwdSuccess}</p>}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ color: 'var(--text-muted)', fontSize: '0.9rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={showPwd} onChange={() => setShowPwd(!showPwd)} />{' '}
+                Show Passwords
               </label>
-              <button type="submit" style={styles.tealBtn} disabled={savingPwd}>
+              <button type="submit" style={styles.primaryBtn} disabled={savingPwd}>
                 {savingPwd ? 'Updating...' : 'Update Password'}
               </button>
             </div>
@@ -379,9 +381,9 @@ const styles = {
     overflowY: 'auto',
     paddingTop: '80px',
     paddingBottom: '40px',
-    background: '#0f0f0f',
-    fontFamily: "'Inter', 'Segoe UI', sans-serif",
-    color: '#f0f0f0',
+    background: 'var(--bg)',
+    color: 'var(--text)',
+    transition: 'background-color 0.25s ease',
   },
   mainContainer: {
     display: 'flex',
@@ -391,52 +393,63 @@ const styles = {
     padding: '1rem',
   },
   card: {
-    backgroundColor: '#1a1a1a',
-    border: '1px solid #2a2a2a',
+    backgroundColor: 'var(--surface)',
+    border: '1px solid var(--border)',
     borderRadius: '16px',
     padding: '2.5rem 3rem',
     width: '100%',
     maxWidth: '650px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+    boxShadow: 'var(--card-shadow)',
+  },
+  backBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    alignSelf: 'flex-start',
+    background: 'none',
+    border: '1px solid var(--border)',
+    color: 'var(--text-muted)',
+    padding: '8px 14px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
   },
   headerRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: '24px',
-    borderBottom: '1px solid #333',
+    borderBottom: '1px solid var(--border)',
     paddingBottom: '1.5rem',
   },
   avatarWrap: {
     display: 'flex',
     alignItems: 'center',
-    gap: '15px'
+    gap: '15px',
   },
   avatar: {
     width: '60px',
     height: '60px',
     borderRadius: '50%',
-    backgroundColor: '#01696f',
+    backgroundColor: 'var(--primary)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '28px',
-    fontWeight: 'bold',
-    color: '#fff'
+    flexShrink: 0,
   },
   heading: {
     margin: 0,
     fontSize: '1.6rem',
     fontWeight: 600,
-    color: '#f0f0f0',
+    color: 'var(--text)',
   },
   editInput: {
     padding: '10px 15px',
     fontSize: '1.2rem',
     borderRadius: '8px',
-    border: '1px solid #01696f',
-    backgroundColor: '#111',
-    color: '#fff',
+    border: '1px solid var(--accent)',
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text)',
     outline: 'none',
   },
   section: {
@@ -450,18 +463,19 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '12px 16px',
-    backgroundColor: '#111',
+    backgroundColor: 'var(--surface-2)',
     borderRadius: '8px',
-    border: '1px solid #333',
+    border: '1px solid var(--border)',
   },
   label: {
-    color: '#888',
+    color: 'var(--text-muted)',
     fontSize: '0.9rem',
     fontWeight: 500,
   },
   value: {
     fontSize: '1rem',
     fontWeight: 600,
+    color: 'var(--text)',
   },
   skillsSection: {
     marginBottom: '24px',
@@ -469,8 +483,10 @@ const styles = {
   subHeading: {
     margin: '0 0 1rem 0',
     fontSize: '1.2rem',
-    color: '#01696f',
+    color: 'var(--text)',
     fontWeight: 600,
+    display: 'inline-flex',
+    alignItems: 'center',
   },
   tagsContainer: {
     display: 'flex',
@@ -482,49 +498,50 @@ const styles = {
     borderRadius: '20px',
     fontSize: '0.9rem',
     fontWeight: 500,
-    color: '#fff',
     cursor: 'pointer',
     display: 'flex',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   pillX: {
     marginLeft: '8px',
     fontWeight: 'bold',
-    opacity: 0.8
+    opacity: 0.8,
   },
   emptyText: {
-    color: '#666',
+    color: 'var(--text-muted)',
     fontStyle: 'italic',
     fontSize: '0.9rem',
+    opacity: 0.7,
   },
-  tealBtn: {
-    backgroundColor: '#01696f',
-    color: '#fff',
+  primaryBtn: {
+    backgroundColor: 'var(--btn-primary-bg)',
+    color: 'var(--btn-primary-text)',
     border: 'none',
     padding: '10px 20px',
     borderRadius: '8px',
-    fontWeight: '600',
+    fontWeight: 600,
     cursor: 'pointer',
-    transition: 'opacity 0.2s'
+    transition: 'opacity 0.2s',
+    display: 'inline-flex',
+    alignItems: 'center',
   },
   cancelBtn: {
-    backgroundColor: '#333',
-    color: '#fff',
-    border: 'none',
+    backgroundColor: 'var(--surface-2)',
+    color: 'var(--text-muted)',
+    border: '1px solid var(--border)',
     padding: '10px 20px',
     borderRadius: '8px',
-    fontWeight: '600',
+    fontWeight: 600,
     cursor: 'pointer',
-    transition: 'background-color 0.2s'
   },
   addBtn: {
-    backgroundColor: '#444',
-    color: '#fff',
+    backgroundColor: 'var(--btn-primary-bg)',
+    color: 'var(--btn-primary-text)',
     border: 'none',
     padding: '0 16px',
     borderRadius: '6px',
     cursor: 'pointer',
-    fontWeight: '600'
+    fontWeight: 600,
   },
   field: {
     display: 'flex',
@@ -535,8 +552,8 @@ const styles = {
     display: 'flex',
     flexWrap: 'wrap',
     gap: '0.5rem',
-    backgroundColor: '#111',
-    border: '1px solid #333',
+    backgroundColor: 'var(--surface-2)',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
     padding: '12px',
   },
@@ -544,32 +561,32 @@ const styles = {
     display: 'flex',
     gap: '8px',
     width: '100%',
-    marginTop: '6px'
+    marginTop: '6px',
   },
   tagInput: {
     flex: 2,
     backgroundColor: 'transparent',
-    border: '1px solid #444',
+    border: '1px solid var(--border)',
     borderRadius: '6px',
-    color: '#fff',
+    color: 'var(--text)',
     padding: '10px 12px',
     fontSize: '0.9rem',
     outline: 'none',
   },
   levelSelect: {
     flex: 1,
-    backgroundColor: '#222',
-    color: '#fff',
-    border: '1px solid #444',
+    backgroundColor: 'var(--input-bg)',
+    color: 'var(--text)',
+    border: '1px solid var(--border)',
     borderRadius: '6px',
     padding: '0 10px',
-    outline: 'none'
+    outline: 'none',
   },
   formInput: {
-    backgroundColor: '#111',
-    border: '1px solid #333',
+    backgroundColor: 'var(--input-bg)',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
-    color: '#fff',
+    color: 'var(--text)',
     padding: '12px',
     fontSize: '1rem',
     outline: 'none',
@@ -578,27 +595,29 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '12px',
-    backgroundColor: '#111',
-    border: '1px solid #333',
+    backgroundColor: 'var(--surface-2)',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
-    padding: '20px'
+    padding: '20px',
   },
   statBox: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '6px'
+    gap: '6px',
   },
   statVal: {
     fontSize: '1.4rem',
     fontWeight: 'bold',
-    color: '#fff'
+    color: 'var(--text)',
   },
   statLabel: {
     fontSize: '0.8rem',
-    color: '#888',
-    textTransform: 'uppercase'
-  }
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
 };
 
 export default Profile;

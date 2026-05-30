@@ -4,7 +4,15 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client</title>
+    <title>SkillSync — Peer Skill Exchange</title>
+    <meta name="description" content="SkillSync connects learners and teachers in real-time skill exchange sessions." />
+    <!-- Anti-flash theme script: runs before CSS loads to prevent FOUC -->
+    <script>
+      (function() {
+        const t = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

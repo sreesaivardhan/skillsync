@@ -6,9 +6,11 @@ const SkillBadge = ({ skill, variant = 'solid' }) => {
     <span
       style={{
         ...styles.badge,
-        backgroundColor: isSolid ? '#01696f' : 'transparent',
-        border: isSolid ? '1px solid #01696f' : '1px solid #01696f',
-        color: isSolid ? '#ffffff' : '#01696f',
+        backgroundColor: isSolid ? 'var(--tag-offered-bg)' : 'var(--tag-wanted-bg)',
+        border: isSolid
+          ? '1px solid var(--tag-offered-bg)'
+          : '1px solid var(--tag-wanted-bg)',
+        color: isSolid ? 'var(--tag-offered-text)' : 'var(--tag-wanted-text)',
       }}
     >
       {skill}

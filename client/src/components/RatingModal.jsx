@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useUser } from '../context/UserContext';
+import { CheckCircle } from 'lucide-react';
 
 const API = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
@@ -48,7 +49,6 @@ const RatingModal = ({ sessionId, partnerName, partnerId, onClose }) => {
         return;
       }
 
-      // Show success state briefly then close
       setSubmitted(true);
       setTimeout(() => onClose(), 1500);
     } catch (err) {
@@ -63,20 +63,17 @@ const RatingModal = ({ sessionId, partnerName, partnerId, onClose }) => {
       <div style={styles.card}>
 
         {submitted ? (
-          // ── Success state ──────────────────────────────────────────────────
           <div style={styles.successBox}>
-            <span style={styles.successIcon}>✅</span>
+            <CheckCircle size={48} color="var(--accent)" strokeWidth={2} />
             <p style={styles.successText}>Rating submitted!</p>
           </div>
         ) : (
           <>
-            {/* Header */}
             <h2 style={styles.title}>
               Rate your session with{' '}
               <span style={styles.partnerName}>@{partnerName}</span>
             </h2>
 
-            {/* Star rating */}
             <div style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((star) => {
                 const isActive = star <= (hoveredStar || selectedStar);
@@ -85,7 +82,7 @@ const RatingModal = ({ sessionId, partnerName, partnerId, onClose }) => {
                     key={star}
                     style={{
                       ...styles.star,
-                      color:     isActive ? '#facc15' : '#3a3a3a',
+                      color:     isActive ? '#facc15' : 'var(--border)',
                       transform: isActive ? 'scale(1.2)' : 'scale(1)',
                     }}
                     onMouseEnter={() => setHoveredStar(star)}
@@ -100,14 +97,12 @@ const RatingModal = ({ sessionId, partnerName, partnerId, onClose }) => {
               })}
             </div>
 
-            {/* Numeric label */}
             {(hoveredStar || selectedStar) > 0 && (
               <p style={styles.starLabel}>
                 {starLabel(hoveredStar || selectedStar)}
               </p>
             )}
 
-            {/* Endorsement text area */}
             <textarea
               style={styles.textarea}
               value={endorsement}
@@ -119,10 +114,8 @@ const RatingModal = ({ sessionId, partnerName, partnerId, onClose }) => {
             />
             <p style={styles.charCount}>{endorsement.length}/200</p>
 
-            {/* Error message */}
             {error && <p style={styles.error}>{error}</p>}
 
-            {/* Actions */}
             <div style={styles.actions}>
               <button
                 style={{
@@ -147,29 +140,27 @@ const RatingModal = ({ sessionId, partnerName, partnerId, onClose }) => {
   );
 };
 
-// Map star count to a short label
 const starLabel = (n) =>
   ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent!'][n];
 
-// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = {
   overlay: {
     position: 'fixed',
     inset: 0,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'var(--overlay-bg)',
     zIndex: 10000,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: '#1a1a1a',
-    border: '1px solid #2a2a2a',
+    backgroundColor: 'var(--surface)',
+    border: '1px solid var(--border)',
     borderRadius: '16px',
     padding: '2.5rem 2rem',
     width: '100%',
     maxWidth: '440px',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+    boxShadow: 'var(--card-shadow)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -178,13 +169,13 @@ const styles = {
   title: {
     margin: 0,
     fontSize: '1.25rem',
-    color: '#f0f0f0',
+    color: 'var(--text)',
     textAlign: 'center',
     fontWeight: 600,
     lineHeight: 1.4,
   },
   partnerName: {
-    color: '#01696f',
+    color: 'var(--accent)',
   },
   starsRow: {
     display: 'flex',
@@ -208,10 +199,10 @@ const styles = {
   },
   textarea: {
     width: '100%',
-    backgroundColor: '#111',
-    border: '1px solid #333',
+    backgroundColor: 'var(--input-bg)',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
-    color: '#f0f0f0',
+    color: 'var(--text)',
     padding: '0.75rem',
     fontSize: '0.9rem',
     fontFamily: 'inherit',
@@ -223,13 +214,13 @@ const styles = {
   charCount: {
     margin: 0,
     fontSize: '0.75rem',
-    color: '#555',
+    color: 'var(--text-muted)',
     alignSelf: 'flex-end',
     marginTop: '-0.5rem',
   },
   error: {
     margin: 0,
-    color: '#f87171',
+    color: '#dc2626',
     fontSize: '0.85rem',
     textAlign: 'center',
   },
@@ -243,8 +234,8 @@ const styles = {
   },
   submitBtn: {
     width: '100%',
-    backgroundColor: '#01696f',
-    color: '#fff',
+    backgroundColor: 'var(--btn-primary-bg)',
+    color: 'var(--btn-primary-text)',
     border: 'none',
     borderRadius: '8px',
     padding: '0.85rem',
@@ -255,7 +246,7 @@ const styles = {
   skipBtn: {
     background: 'none',
     border: 'none',
-    color: '#666',
+    color: 'var(--text-muted)',
     fontSize: '0.85rem',
     cursor: 'pointer',
     textDecoration: 'underline',
@@ -270,15 +261,11 @@ const styles = {
     gap: '0.75rem',
     padding: '1rem 0',
   },
-  successIcon: {
-    fontSize: '3rem',
-    lineHeight: 1,
-  },
   successText: {
     margin: 0,
     fontSize: '1.2rem',
     fontWeight: 600,
-    color: '#4ade80',
+    color: 'var(--text)',
   },
 };
 

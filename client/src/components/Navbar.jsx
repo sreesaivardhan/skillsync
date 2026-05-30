@@ -1,14 +1,25 @@
 // Top navigation bar component with links and the authenticated user's info
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import CreditBar from './CreditBar';
+import { Zap, UserCircle, LogOut, Sun, Moon } from 'lucide-react';
 
 const Navbar = () => {
   const { user, logout } = useUser();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [theme, setTheme] = useState(
+    localStorage.getItem('theme') || 'dark'
+  );
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
   const handleLogout = () => {
     logout();
@@ -20,7 +31,7 @@ const Navbar = () => {
   return (
     <nav style={styles.nav} className="navbar-container">
       <div style={styles.left}>
-        <span style={styles.logoIcon}>⚡</span>
+        <Zap size={22} color="var(--accent)" strokeWidth={2.5} />
         <span style={styles.logoText}>SkillSync</span>
       </div>
 
@@ -35,10 +46,22 @@ const Navbar = () => {
 
       <div style={styles.right} className={`navbar-stats ${mobileMenuOpen ? 'menu-open' : ''}`}>
         <CreditBar />
+
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="theme-toggle-btn"
+          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          aria-label="Toggle dark/light mode"
+        >
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+
         <button
           onClick={() => navigate('/profile')}
           style={styles.profileBtn}
         >
+          <UserCircle size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
           Profile
         </button>
         <button
@@ -46,6 +69,7 @@ const Navbar = () => {
           style={styles.logoutBtn}
           className="logout-btn"
         >
+          <LogOut size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
           Logout
         </button>
       </div>
@@ -60,8 +84,8 @@ const styles = {
     left: 0,
     width: '100%',
     height: '64px',
-    backgroundColor: '#1a1a1a',
-    borderBottom: '1px solid #2a2a2a',
+    backgroundColor: 'var(--navbar-bg)',
+    borderBottom: '1px solid var(--border)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -69,7 +93,7 @@ const styles = {
     padding: '0 2rem',
     boxSizing: 'border-box',
     zIndex: 1000,
-    fontFamily: "'Inter', 'Segoe UI', sans-serif",
+    transition: 'background-color 0.25s ease',
   },
   left: {
     display: 'flex',
@@ -77,13 +101,10 @@ const styles = {
     gap: '0.4rem',
     flex: 1,
   },
-  logoIcon: {
-    fontSize: '1.4rem',
-  },
   logoText: {
     fontSize: '1.4rem',
     fontWeight: 700,
-    color: '#01696f', /* Teal accent */
+    color: 'var(--accent)',
     letterSpacing: '-0.5px',
   },
   center: {
@@ -93,12 +114,13 @@ const styles = {
     flex: 1,
   },
   welcome: {
-    color: '#888',
+    color: 'var(--accent)',
     fontSize: '0.95rem',
     marginRight: '0.3rem',
+    opacity: 0.7,
   },
   username: {
-    color: '#f0f0f0',
+    color: 'var(--navbar-text)',
     fontSize: '1rem',
     fontWeight: 600,
   },
@@ -106,37 +128,41 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: '20px',
+    gap: '12px',
     marginLeft: 'auto',
     flexShrink: 0,
   },
   logoutBtn: {
     backgroundColor: 'transparent',
-    border: '1px solid #333',
-    color: '#ccc',
+    border: '1px solid var(--border)',
+    color: 'var(--navbar-text)',
     padding: '8px 16px',
     borderRadius: '6px',
     fontSize: '0.85rem',
     fontWeight: 500,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+    display: 'inline-flex',
+    alignItems: 'center',
   },
   profileBtn: {
-    backgroundColor: '#01696f',
-    border: 'none',
-    color: '#fff',
+    backgroundColor: 'transparent',
+    border: '1px solid var(--accent)',
+    color: 'var(--accent)',
     padding: '8px 16px',
     borderRadius: '6px',
     fontSize: '0.85rem',
     fontWeight: 500,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+    display: 'inline-flex',
+    alignItems: 'center',
   },
   mobileHamburger: {
     display: 'none',
     fontSize: '1.5rem',
     cursor: 'pointer',
-    color: '#f0f0f0'
+    color: 'var(--navbar-text)',
   }
 };
 
