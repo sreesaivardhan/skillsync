@@ -29,13 +29,26 @@ const languageMap = {
 
 // ── Helper: authenticated GitHub API GET ──────────────────────────────────────
 async function githubGet(url) {
-  const res = await fetch(url, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'SkillSync',
-    },
-  });
-  if (!res.ok) throw new Error(`GitHub API failed: ${res.status}`);
+  const headers = {
+    Accept: 'application/vnd.github+json',
+    'User-Agent': 'SkillSync',
+  };
+  if (process.env.GITHUB_TOKEN) {
+    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  }
+
+  const res = await fetch(url, { headers });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`GitHub API ${res.status} for ${url}:`, text);
+    if (res.status === 403 || res.status === 429) {
+      console.error('GitHub rate limit remaining:', res.headers.get('x-ratelimit-remaining'));
+      console.error('GitHub rate limit reset:',     res.headers.get('x-ratelimit-reset'));
+    }
+    throw new Error(`GitHub API failed: ${res.status}`);
+  }
+
   return res.json();
 }
 
