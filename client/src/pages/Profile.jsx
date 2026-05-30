@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useUser } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Lock, UserCircle, Award, Coins, Github, CheckCircle, ExternalLink } from 'lucide-react';
+import { Pencil, Lock, UserCircle, Award, Coins, GitBranch, CheckCircle, ExternalLink } from 'lucide-react';
 
 const API = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
@@ -431,7 +431,7 @@ const Profile = () => {
         {/* ── GitHub Skill Import Card ───────────────────────────────────── */}
         <div style={styles.card} className="auth-card">
           <h3 style={styles.subHeading}>
-            <Github size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+            <GitBranch size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
             GitHub Skill Import
           </h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '0 0 1.2rem' }}>
