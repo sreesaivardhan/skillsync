@@ -14,4 +14,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Verify SMTP connection at startup — logs exact error to Render logs
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('SMTP verify failed:', error);
+  } else {
+    console.log('SMTP server is ready to send emails');
+  }
+});
+
 export default transporter;

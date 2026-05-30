@@ -1,6 +1,10 @@
 import 'dotenv/config';
 // Entry point for the SkillSync Express + Socket.io server
 
+// ── Startup diagnostics (values are never printed — only presence) ─────────────
+console.log('EMAIL_USER loaded:', !!process.env.EMAIL_USER);
+console.log('EMAIL_PASS loaded:', !!process.env.EMAIL_PASS);
+
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
