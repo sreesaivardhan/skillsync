@@ -9,6 +9,8 @@ import Lobby from './pages/Lobby';
 import Session from './pages/Session';
 import Profile from './pages/Profile';
 import AuthCallback from './pages/AuthCallback';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // ── Protected Route ───────────────────────────────────────────────────────────
 // Redirects unauthenticated users to /login
@@ -31,9 +33,11 @@ const AppRoutes = () => (
     <Route path="/" element={<RootRedirect />} />
 
     {/* Public routes */}
-    <Route path="/login"         element={<Login />} />
-    <Route path="/register"      element={<Register />} />
-    <Route path="/auth/callback" element={<AuthCallback />} />
+    <Route path="/login"            element={<Login />} />
+    <Route path="/register"         element={<Register />} />
+    <Route path="/auth/callback"    element={<AuthCallback />} />
+    <Route path="/forgot-password"  element={<ForgotPassword />} />
+    <Route path="/reset-password"   element={<ResetPassword />} />
 
     {/* Protected routes */}
     <Route

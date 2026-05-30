@@ -4,10 +4,12 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import passport from 'passport';
+import crypto from 'crypto';
 import { body, validationResult } from 'express-validator';
 
 import User from '../models/User.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import transporter from '../config/mailer.js';
 
 const router = express.Router();
 
@@ -182,5 +184,89 @@ router.get(
     res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
   }
 );
+
+// ── POST /api/auth/forgot-password ─────────────────────────────────────────────
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'No account found with that email.' });
+
+    // Google-only accounts have no password — send guidance email instead
+    if (user.googleId && !user.password) {
+      await transporter.sendMail({
+        from: `"SkillSync" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: 'SkillSync — Your account uses Google Sign-In',
+        html: `<p>Hi ${user.username},</p>
+               <p>Your SkillSync account is linked to Google. Please use the <strong>Continue with Google</strong> button on the login page to sign in.</p>
+               <p>No password reset is needed.</p>`,
+      });
+      return res.json({ message: 'This account uses Google Sign-In. We sent you an email with instructions.' });
+    }
+
+    // Normal account — generate a timed reset token
+    const token = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken   = token;
+    user.resetPasswordExpires = Date.now() + 3_600_000; // 1 hour
+    await user.save();
+
+    const resetURL = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+    await transporter.sendMail({
+      from: `"SkillSync" <${process.env.EMAIL_USER}>`,
+      to: user.email,
+      subject: 'SkillSync — Reset Your Password',
+      html: `<p>Hi ${user.username},</p>
+             <p>Click the link below to reset your password. This link expires in 1 hour.</p>
+             <a href="${resetURL}" style="padding:10px 20px;background:#142d4c;color:#fff;border-radius:6px;text-decoration:none;">Reset Password</a>
+             <p>If you didn't request this, ignore this email.</p>`,
+    });
+
+    res.json({ message: 'Password reset link sent to your email.' });
+  } catch (err) {
+    console.error('Forgot password error:', err.message);
+    res.status(500).json({ message: 'Failed to send email. Please try again later.' });
+  }
+});
+
+// ── GET /api/auth/reset-password?token=xxx — validate token ──────────────────
+router.get('/reset-password', async (req, res) => {
+  try {
+    const { token } = req.query;
+    const user = await User.findOne({
+      resetPasswordToken:   token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+    if (!user) return res.status(400).json({ message: 'Reset link is invalid or has expired.' });
+    res.json({ valid: true, email: user.email });
+  } catch (err) {
+    console.error('Reset-password GET error:', err.message);
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── POST /api/auth/reset-password — save new password ───────────────────────
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    const user = await User.findOne({
+      resetPasswordToken:   token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+    if (!user) return res.status(400).json({ message: 'Reset link is invalid or has expired.' });
+    if (!newPassword || newPassword.length < 6)
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+
+    user.password             = await bcrypt.hash(newPassword, 10);
+    user.resetPasswordToken   = null;
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully. You can now log in.' });
+  } catch (err) {
+    console.error('Reset-password POST error:', err.message);
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
 
 export default router;

@@ -92,6 +92,13 @@ const Login = () => {
             </div>
           </div>
 
+          {/* Forgot password link */}
+          <div style={{ textAlign: 'right', marginTop: '-0.4rem' }}>
+            <a href="/forgot-password" style={styles.forgotLink}>
+              Forgot password?
+            </a>
+          </div>
+
           {error && <p style={styles.error}>{error}</p>}
 
           <button
@@ -246,6 +253,12 @@ const styles = {
     color: 'var(--accent)',
     textDecoration: 'none',
     fontWeight: 600,
+  },
+  forgotLink: {
+    color: 'var(--text-muted)',
+    fontSize: '0.82rem',
+    textDecoration: 'none',
+    transition: 'color 0.2s',
   },
   divider: {
     display: 'flex',
