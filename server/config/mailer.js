@@ -1,26 +1,20 @@
-// Nodemailer transporter — Gmail SMTP via App Password
-import nodemailer from 'nodemailer';
+// Email sender — uses Resend HTTP API (no SMTP, works on Render free tier)
+import { Resend } from 'resend';
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Verify SMTP connection at startup — logs exact error to Render logs
-transporter.verify((error, success) => {
+export const sendMail = async ({ to, subject, html }) => {
+  const { data, error } = await resend.emails.send({
+    from: 'SkillSync <onboarding@resend.dev>',
+    to,
+    subject,
+    html,
+  });
+
   if (error) {
-    console.error('SMTP verify failed:', error);
-  } else {
-    console.log('SMTP server is ready to send emails');
+    throw new Error(error.message || 'Resend API error');
   }
-});
 
-export default transporter;
+  return data;
+};
+

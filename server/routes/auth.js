@@ -9,7 +9,7 @@ import { body, validationResult } from 'express-validator';
 
 import User from '../models/User.js';
 import authMiddleware from '../middleware/authMiddleware.js';
-import transporter from '../config/mailer.js';
+import { sendMail } from '../config/mailer.js';
 
 const router = express.Router();
 
@@ -194,8 +194,7 @@ router.post('/forgot-password', async (req, res) => {
 
     // Google-only accounts have no password — send guidance email instead
     if (user.googleId && !user.password) {
-      await transporter.sendMail({
-        from: `"SkillSync" <${process.env.EMAIL_USER}>`,
+      await sendMail({
         to: user.email,
         subject: 'SkillSync — Your account uses Google Sign-In',
         html: `<p>Hi ${user.username},</p>
@@ -212,8 +211,7 @@ router.post('/forgot-password', async (req, res) => {
     await user.save();
 
     const resetURL = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
-    await transporter.sendMail({
-      from: `"SkillSync" <${process.env.EMAIL_USER}>`,
+    await sendMail({
       to: user.email,
       subject: 'SkillSync — Reset Your Password',
       html: `<p>Hi ${user.username},</p>
